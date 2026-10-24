@@ -1617,8 +1617,24 @@
   "FST",
   "WAT",
   "EUS",
-  "SRA"
+  "SRA",
+  "HWV",
+  "HAF",
+  "TOM",
+  "HHY",
+  "CLJ",
+  "WIJ",
+  "BKG",
+  "ROM"
  ],
  "nationalRailIncidentsUrl": "https://api1.raildata.org.uk/1010-knowlegebase-incidents-xml-feed1_0/incidents.xml",
- "nationalRailStationsUrl": "https://api1.raildata.org.uk/1010-nationalrail-knowledgebase-stations-feed-_json_---production5_0/stations"
+ "nationalRailStationsUrl": "https://api1.raildata.org.uk/1010-nationalrail-knowledgebase-stations-feed-_json_---production5_0/stations",
+ "arrivalsNetworkModes": [
+  "tube",
+  "elizabeth-line",
+  "overground",
+  "dlr",
+  "tram",
+  "river-bus"
+ ]
 }

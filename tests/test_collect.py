@@ -155,7 +155,10 @@ class NationalRailTests(unittest.TestCase):
                                 "delayReason": {"Value": 104, "tiploc": "LEWISHM"},
                                 "destination": [{"locationName": "London Cannon Street", "crs": "CST"}],
                                 "origin": [{"locationName": "Dartford", "crs": "DFD"}], "length": 8,
-                                "subsequentLocations": [{"crs": "CST"}]}],
+                                "subsequentLocations": [{"crs": "CST"}],
+                                "formation": {"serviceLoading": {"loadingPercentage": {"type": "Typical", "Value": 37}},
+                                              "coaches": [{"number": "A1", "loading": {"source": "CIS", "Value": 65}},
+                                                          {"number": "A2", "loading": {"Value": 20}}, {"number": "A3"}]}}],
              "nrccMessages": ["Disruption at Lewisham & Hither Green.", {"$type": "x", "Value": "Lifts out of order"}]}
 
     def run_nr(self, tmp, nr_fetch, key="NRKEY-SECRET-1"):
@@ -177,10 +180,10 @@ class NationalRailTests(unittest.TestCase):
             return 200, json.dumps(self.BOARD).encode()
         with tempfile.TemporaryDirectory() as tmp:
             self.assertEqual(self.run_nr(tmp, nr_fetch), 0)
-            self.assertEqual(len(calls), 25)
+            self.assertEqual(len(calls), len(json.load(open(ROOT / "config" / "registry.json"))["nationalRailStations"]))
             url, key = calls[0]
-            # same request as the broker: GetDepBoardWithDetails/{CRS}/{London local time of the slot}
-            self.assertTrue(url.endswith("/GetDepBoardWithDetails/CTN/20261024T090000"), url)   # 08:00 UTC = 09:00 BST
+            # full hour of departures from the London local time of the slot (GetDepBoardWithDetails caps at 10)
+            self.assertTrue(url.endswith("/GetDepartureBoardByCRS/CTN/20261024T090000?numRows=150&timeWindow=60"), url)   # 08:00 UTC = 09:00 BST
             self.assertNotIn("NRKEY", url)
             self.assertEqual(key, "NRKEY-SECRET-1")
             rec = RunTests.lines(None, tmp, "nationalRailDepartures")[0]
@@ -189,6 +192,7 @@ class NationalRailTests(unittest.TestCase):
             self.assertEqual((row["std"], row["etd"], row["platform"], row["delayReason"], row["destination"], row["origin"]),
                              ("2026-10-24T08:03:00", "2026-10-24T08:07:00", "1", 104, ["CST"], ["DFD"]))
             self.assertEqual(ctn["nrccMessages"], ["Disruption at Lewisham & Hither Green.", {"Value": "Lifts out of order"}])
+            self.assertEqual((row["loadingPct"], row["coachLoading"]), (37, [["A1", 65], ["A2", 20]]))   # train loading kept
             everything = json.dumps(rec) + (Path(tmp) / "_health" / "2026-10-24.ndjson").read_text()
             self.assertNotIn("NRKEY", everything)
 
@@ -200,7 +204,7 @@ class NationalRailTests(unittest.TestCase):
                 calls.append(url)
                 return 401, b"Unauthorized"
             self.assertEqual(self.run_nr(tmp, nr_fetch), 2)
-            self.assertEqual(len(calls), 50)   # 401 not retried within a pass; one more pass 45 s later
+            self.assertEqual(len(calls), 2 * len(json.load(open(ROOT / "config" / "registry.json"))["nationalRailStations"]))   # 401 not retried within a pass; one more pass 45 s later
             h = json.loads((Path(tmp) / "_health" / "2026-10-24.ndjson").read_text())
             self.assertEqual(h["datasets"]["nationalRailDepartures"]["status"], "failed")
 
@@ -329,6 +333,42 @@ class StationAccessTests(unittest.TestCase):
             self.assertEqual(len(list((Path(tmp) / "_reference" / "tfl-stationdata").iterdir())), 1)
 
 
+class ArrivalsCoverageTests(unittest.TestCase):
+    def run_ds(self, tmp, ds, fetch):
+        import argparse
+        a = argparse.Namespace(out=tmp, registry=str(ROOT / "config" / "registry.json"), now="2026-10-24T10:00:05Z",
+                               no_sleep=True, datasets=ds, dry_run=False, current_only=True)
+        return collect.run(a, fetch=fetch, sleep=lambda s: None, clock=lambda: dt("2026-10-24T10:00:05Z"))
+
+    def test_dlr_predictions_sharing_one_id_are_all_kept(self):
+        dlr = [{"id": "-937089209", "lineId": "dlr", "naptanId": "940GZZDLCAN", "platformName": p, "destinationNaptanId": d,
+                "timeToStation": t, "vehicleId": ""} for p, d, t in [("Platform 6", "BNK", 51), ("Platform 1", "LEW", 111),
+                                                                      ("Platform 1", "LEW", 171), ("Platform 2", "LEW", 351)]]
+        def fetch(url, t):
+            if "940GZZDLCAN" in url:
+                return 200, json.dumps(dlr + dlr[:1]).encode(), {}     # last one: same prediction polled twice
+            return 200, b"[]", {}
+        with tempfile.TemporaryDirectory() as tmp:
+            self.run_ds(tmp, "arrivalsDetail", fetch)
+            rec = RunTests.lines(None, tmp, "arrivalsDetail")[0]
+            self.assertEqual(len(rec["stations"]["canary-wharf"]), 4)
+
+    def test_network_arrivals_one_call_per_mode(self):
+        seen = []
+        def fetch(url, t):
+            seen.append(url)
+            m = url.split("/Mode/")[1].split("/")[0]
+            return 200, json.dumps([{"lineId": m, "naptanId": "N1", "timeToStation": 60, "id": "x"},
+                                    {"lineId": m, "naptanId": "N2", "timeToStation": 30, "id": "x"}]).encode(), {}
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(self.run_ds(tmp, "arrivalsNetwork", fetch), 0)
+            rec = RunTests.lines(None, tmp, "arrivalsNetwork")[0]
+            self.assertEqual(sorted(rec["modes"]), sorted(["tube", "elizabeth-line", "overground", "dlr", "tram", "river-bus"]))
+            self.assertTrue(all("?count=-1" in u for u in seen) and len(seen) == 6)
+            rb = [dict(zip(rec["fields"], r)) for r in rec["modes"]["river-bus"]]
+            self.assertEqual([r["naptanId"] for r in rb], ["N1", "N2"])
+
+
 class InvalidKeyTests(unittest.TestCase):
     def test_invalid_key_dropped_and_run_continues_anonymously(self):
         import argparse
@@ -451,7 +491,7 @@ class RunTests(unittest.TestCase):
             health = self.lines(tmp, "_health")
             self.assertEqual(len(health), 1)
             self.assertEqual(health[0]["datasets"]["crowdingReadings"]["status"], "ok")
-            self.assertEqual(health[0]["requests"], 1 + 2 + 5 + 33 + 47 + 1 + 5 + 315 + 1)  # + daily station data ZIP  # arrivals calls shared with arrivalsDetail
+            self.assertEqual(health[0]["requests"], 1 + 2 + 5 + 33 + 47 + 1 + 5 + 315 + 1 + 6)  # + daily station data ZIP + 6 network arrivals modes  # arrivals calls shared with arrivalsDetail
             # backup run: nothing to do, nothing fetched, nothing appended
             rc2 = collect.run(self.args(tmp, now="2026-10-24T16:05:00Z"), fetch=lambda u, t: 1 / 0,
                               sleep=lambda s: None, clock=lambda: dt("2026-10-24T16:05:01Z"))

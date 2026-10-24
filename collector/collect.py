@@ -44,7 +44,9 @@ except Exception:  # pragma: no cover - tzdata missing
 API = "https://api.tfl.gov.uk"
 DATASETS = ["liftDisruptions", "lineStatus", "stopDisruptions", "crowdingReadings", "arrivalsReadings", "arrivalsDetail",
             "busLineStatus", "networkDisruptions", "crowdingNetwork", "nationalRailDepartures", "nationalRailIncidents",
-            "nationalRailStations", "stationAccess"]
+            "nationalRailStations", "stationAccess", "arrivalsNetwork"]
+# arrivalsNetwork: every live prediction on the whole network, one call per mode (/Mode/{mode}/Arrivals?count=-1):
+# tube, Elizabeth line, Overground, DLR, tram, river bus (~7,000 rows an hour). Cable car and Woolwich Ferry publish none.
 # nationalRailStations: the whole Knowledgebase stations feed (~2,600 stations, ~55 MB), once a day; each
 # day stores a short fingerprint of every station and the full entry only for stations that changed.
 DAILY_AT_UTC = {"nationalRailStations": 3, "stationAccess": 3}
@@ -60,7 +62,7 @@ DETAIL_FIELDS = ["naptanId", "lineId", "platformName", "direction", "destination
 # Large datasets are stored gzip-compressed: each hour appends one gzip member to <day>.ndjson.gz
 # (multi-member gzip; `gzip -dc`, Python gzip and zlib all read it as one stream). Keeps the repo lean.
 GZIP_DATASETS = {"arrivalsDetail", "busLineStatus", "networkDisruptions", "crowdingNetwork", "nationalRailDepartures",
-                 "nationalRailIncidents", "nationalRailStations"}
+                 "nationalRailIncidents", "nationalRailStations", "arrivalsNetwork"}
 LATE_FILL_MAX = timedelta(minutes=45)
 RETRY_PASS_DELAY_S = 45
 CHUNK = 20
@@ -145,6 +147,7 @@ def derive(reg):
         "nrStations": reg.get("nationalRailStations", []),
         "kbIncidentsUrl": reg.get("nationalRailIncidentsUrl"),
         "kbStationsUrl": reg.get("nationalRailStationsUrl"),
+        "arrivalsNetworkModes": reg.get("arrivalsNetworkModes", ["tube", "elizabeth-line", "overground", "dlr", "tram", "river-bus"]),
     }
 
 
@@ -170,7 +173,13 @@ def default_fetch(url, timeout):
 NR_DEP_BASE = "https://api1.raildata.org.uk/1010-live-departure-board---staff-version1_0/LDBSVWS/api/20220120"
 NR_SERVICE_FIELDS = ["rid", "uid", "operatorCode", "std", "etd", "atd", "sta", "eta", "ata", "departureType",
                      "platform", "platformIsHidden", "isCancelled", "cancelReason", "delayReason",
-                     "destination", "origin", "length", "adhocAlerts"]
+                     "destination", "origin", "length", "adhocAlerts",
+                     # added 25 Oct 2026 (v1 only gains fields): train loading where the operator publishes it
+                     "trainid", "category", "loadingPct", "coachLoading"]
+# Full hour of departures: GetDepBoardWithDetails returns at most 10 trains whatever numRows says (checked live
+# 24 Oct 2026: London Bridge 10 = ~10 minutes); GetDepartureBoardByCRS honours numRows/timeWindow (76 trains,
+# the whole hour) and carries the same fields plus formation/loading.
+NR_BOARD_PATH = "GetDepartureBoardByCRS/{crs}/{when}?numRows=150&timeWindow=60"
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -199,7 +208,7 @@ class NRClient:
         self.status_counts = {}
 
     def board(self, crs, when_local):
-        url = f"{NR_DEP_BASE}/GetDepBoardWithDetails/{urllib.parse.quote(crs)}/{when_local.strftime('%Y%m%dT%H%M%S')}"
+        url = f"{NR_DEP_BASE}/" + NR_BOARD_PATH.format(crs=urllib.parse.quote(crs), when=when_local.strftime('%Y%m%dT%H%M%S'))
         for attempt in range(2):
             if self.requests:
                 self.sleep(0.25)
@@ -427,11 +436,28 @@ def collect_station_access(c, ctx):
     return rec, "ok", len(lifts), f"{len(lifts)} lifts at {len(stations)} stations, {'new version stored' if changed else 'unchanged'}"
 
 
+def service_loading(sv):
+    """(loading % for the whole train or None, [[coach, loading %], ...] or None) from Darwin's formation data."""
+    fm = sv.get("formation") if isinstance(sv.get("formation"), dict) else {}
+    lp = ((fm.get("serviceLoading") or {}).get("loadingPercentage") or {}) if isinstance(fm.get("serviceLoading"), dict) else {}
+    pct = lp.get("Value") if isinstance(lp, dict) else None
+    coaches = []
+    for c in fm.get("coaches") or []:
+        if isinstance(c, dict) and isinstance(c.get("loading"), dict) and c["loading"].get("Value") is not None:
+            coaches.append([c.get("number"), c["loading"]["Value"]])
+    return pct, (coaches or None)
+
+
 def compact_service(sv):
     row = []
+    pct, coaches = service_loading(sv)
     for f in NR_SERVICE_FIELDS:
         v = sv.get(f)
-        if f in ("destination", "origin") and isinstance(v, list):
+        if f == "loadingPct":
+            v = pct
+        elif f == "coachLoading":
+            v = coaches
+        elif f in ("destination", "origin") and isinstance(v, list):
             v = [x.get("crs") or x.get("locationName") for x in v if isinstance(x, dict)]
         elif f in ("cancelReason", "delayReason") and isinstance(v, dict):
             v = v.get("Value")
@@ -619,7 +645,10 @@ def fetch_arrivals(c, ctx):
             if isinstance(r, list):
                 any_ok = True
                 for p in r:
-                    k = p.get("id") if isinstance(p, dict) else None
+                    # TfL gives every DLR prediction at a stop the SAME id (seen 24 Oct 2026), so the id alone
+                    # would collapse them to one; the same prediction polled via two ids is still a duplicate.
+                    k = (tuple(p.get(f) for f in ("id", "naptanId", "platformName", "destinationNaptanId",
+                                                  "timeToStation", "vehicleId", "lineId")) if isinstance(p, dict) else None)
                     if k is not None:
                         if k in seen:
                             continue
@@ -709,6 +738,24 @@ def collect_crowding_network(c, ctx):
     return body, ("ok" if got == len(ids) else "partial"), avail, f"{got}/{len(ids)} answered, {avail} with live data"
 
 
+def collect_arrivals_network(c, ctx):
+    modes = ctx.get("arrivalsNetworkModes") or []
+    out, ok, rows = {}, 0, 0
+    for m in modes:
+        r = c.get(f"/Mode/{m}/Arrivals?count=-1")
+        if isinstance(r, list):
+            ok += 1
+            out[m] = [[p.get(f) for f in DETAIL_FIELDS] for p in
+                      sorted((p for p in r if isinstance(p, dict)), key=lambda p: (p.get("lineId") or "", p.get("naptanId") or "", p.get("timeToStation") or 0))]
+            rows += len(out[m])
+        else:
+            out[m] = None
+    if ok == 0:
+        return None, "failed", 0, f"0/{len(modes)} modes"
+    body = {"source": "Mode/{mode}/Arrivals?count=-1", "closureWindow": ctx["closure"], "fields": DETAIL_FIELDS, "modes": out}
+    return body, ("ok" if ok == len(modes) else "partial"), rows, f"{ok}/{len(modes)} modes, {rows} predictions"
+
+
 def collect_national_rail(c, ctx):
     nr, stations = ctx.get("nr"), ctx.get("nrStations") or []
     if nr is None:
@@ -730,7 +777,7 @@ def collect_national_rail(c, ctx):
     good = sum(1 for v in out.values() if v is not None)
     if good == 0:
         return None, "failed", 0, f"0/{len(stations)} stations"
-    body = {"source": "RDM LDBSVWS GetDepBoardWithDetails", "boardTimeLocal": when.strftime("%Y-%m-%dT%H:%M:%S"),
+    body = {"source": "RDM LDBSVWS " + NR_BOARD_PATH.split("/")[0] + " (next 60 min)", "boardTimeLocal": when.strftime("%Y-%m-%dT%H:%M:%S"),
             "fields": NR_SERVICE_FIELDS, "stations": out}
     return body, ("ok" if good == len(stations) else "partial"), svc, f"{good}/{len(stations)} stations, {svc} services"
 
@@ -749,6 +796,7 @@ COLLECTORS = {
     "nationalRailIncidents": collect_nr_incidents,
     "nationalRailStations": collect_nr_stations,
     "stationAccess": collect_station_access,
+    "arrivalsNetwork": collect_arrivals_network,
 }
 
 
@@ -926,7 +974,8 @@ def run(args, fetch=default_fetch, sleep=time.sleep, clock=utcnow, nr_fetch=nr_d
                      "crowdingNetwork": len(base_ctx["crowdingNetworkIds"]),
                      "nationalRailDepartures": len(base_ctx["nrStations"]) if nr_key else 0,
                      "nationalRailIncidents": 1 if kb_inc_key else 0,
-                     "nationalRailStations": 1 if kb_st_key else 0, "stationAccess": 1}
+                     "nationalRailStations": 1 if kb_st_key else 0, "stationAccess": 1,
+                     "arrivalsNetwork": len(base_ctx.get("arrivalsNetworkModes") or [])}
             if "arrivalsDetail" in todo and "arrivalsReadings" not in todo:
                 calls["arrivalsDetail"] = calls["arrivalsReadings"]
             log(f"dry-run: would make ~{sum(calls[d] for d in todo)} requests; nothing fetched or written")

@@ -12,7 +12,7 @@ except Exception:  # pragma: no cover
     LON = datetime.timezone.utc
 UTC = datetime.timezone.utc
 DATASETS = ["liftDisruptions", "lineStatus", "stopDisruptions", "crowdingReadings", "arrivalsReadings"]
-EXTRA_DATASETS = ["arrivalsDetail", "busLineStatus", "networkDisruptions", "crowdingNetwork", "nationalRailDepartures", "nationalRailIncidents", "nationalRailStations"]  # in the record and the app manifest, not summarised
+EXTRA_DATASETS = ["arrivalsDetail", "busLineStatus", "networkDisruptions", "crowdingNetwork", "nationalRailDepartures", "nationalRailIncidents", "nationalRailStations", "stationAccess", "arrivalsNetwork"]  # in the record and the app manifest, not summarised
 VERSION = 1
 INCIDENT = ("2026-09-22T15:00:00Z", "2026-09-25T15:00:00Z")
 FMT = "%Y-%m-%dT%H:%M:%SZ"
