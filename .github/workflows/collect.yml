@@ -1,12 +1,14 @@
 name: collect
 
 # Hourly TfL collection. Zero LLM tokens.
-# :50 run pre-sleeps until HH:00:00; :05 run is a backup that fills anything missing
-# (and late-fills the current hour up to HH:45). Manual runs collect the current hour only.
+# :50 run pre-sleeps until HH:00:00; :08 and :23 runs are backups that fill anything missing
+# (and late-fill the current hour up to HH:45). Off-peak minutes: GitHub delays or drops
+# schedules most around the top of the hour. Manual runs collect the current hour only.
 on:
   schedule:
     - cron: '50 * * * *'
-    - cron: '5 * * * *'
+    - cron: '8 * * * *'
+    - cron: '23 * * * *'
   workflow_dispatch:
 
 permissions:
