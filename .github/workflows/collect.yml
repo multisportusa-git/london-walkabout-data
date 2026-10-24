@@ -1,0 +1,151 @@
+name: collect
+
+# Hourly TfL collection. Zero LLM tokens.
+# :50 run pre-sleeps until HH:00:00; :05 run is a backup that fills anything missing
+# (and late-fills the current hour up to HH:45). Manual runs collect the current hour only.
+on:
+  schedule:
+    - cron: '50 * * * *'
+    - cron: '5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
+      rc: ${{ steps.collect.outputs.rc }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      # Keys come from Google Secret Manager (project london-commuter-broker) through keyless
+      # Workload Identity Federation: no key is stored in GitHub. Values are masked in logs.
+      # Any failure here falls back (repo secret TFL_APP_KEY, else anonymous): collection never stops.
+      - name: Sign in to Google Cloud (keyless)
+        id: gcp
+        if: ${{ vars.GCP_WIF_PROVIDER != '' }}
+        continue-on-error: true
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SA_EMAIL }}
+      - name: Read API keys from Secret Manager
+        id: keys
+        if: ${{ steps.gcp.outcome == 'success' }}
+        continue-on-error: true
+        uses: google-github-actions/get-secretmanager-secrets@v3
+        with:
+          secrets: |-
+            tfl:london-commuter-broker/tfl-app-key
+            rail:london-commuter-broker/rail-data-api-key
+      # Optional extra keys, read separately so a secret that does not exist yet never blocks the main keys.
+      - name: Read Knowledgebase Incidents key (optional)
+        id: kbkeys
+        if: ${{ steps.gcp.outcome == 'success' }}
+        continue-on-error: true
+        uses: google-github-actions/get-secretmanager-secrets@v3
+        with:
+          secrets: |-
+            kbinc:london-commuter-broker/rail-kb-incidents-key
+      - name: Read Knowledgebase Stations key (optional)
+        id: kbst
+        if: ${{ steps.gcp.outcome == 'success' }}
+        continue-on-error: true
+        uses: google-github-actions/get-secretmanager-secrets@v3
+        with:
+          secrets: |-
+            kbst:london-commuter-broker/rail-kb-stations-key
+      - name: Warn if keys could not be read
+        if: ${{ vars.GCP_WIF_PROVIDER != '' && steps.keys.outcome != 'success' }}
+        run: echo "::warning::Could not read keys from Secret Manager; this run falls back to the TFL_APP_KEY repo secret or anonymous access."
+      - name: Collect TfL data
+        id: collect
+        env:
+          TFL_APP_KEY: ${{ steps.keys.outputs.tfl || secrets.TFL_APP_KEY }}
+          NR_API_KEY: ${{ steps.keys.outputs.rail || secrets.NR_API_KEY }}
+          NR_KB_INCIDENTS_KEY: ${{ steps.kbkeys.outputs.kbinc || secrets.NR_KB_INCIDENTS_KEY }}
+          NR_KB_STATIONS_KEY: ${{ steps.kbst.outputs.kbst || secrets.NR_KB_STATIONS_KEY }}
+          EXTRA_ARGS: ${{ github.event_name == 'workflow_dispatch' && '--current-only' || '' }}
+        run: |
+          set +e
+          python collector/collect.py --out data --registry config/registry.json $EXTRA_ARGS
+          rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          echo "collector exit code: $rc"
+      # Raw data (including health lines for failed hours) is committed BEFORE anything else,
+      # so a dashboard bug can never block or lose a reading.
+      - name: Commit and push raw data
+        id: commit
+        if: ${{ !cancelled() }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "nothing to commit"
+            exit 0
+          fi
+          git commit -q -m "data: hourly collection $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3 4 5; do
+            if git pull --rebase -q origin "${GITHUB_REF_NAME}" && git push -q origin "HEAD:${GITHUB_REF_NAME}"; then
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "push attempt $i failed; retrying"
+            sleep $((i * 5))
+          done
+          echo "::error::push failed after 5 attempts"
+          exit 1
+      - name: Build dashboard summaries
+        if: steps.commit.outputs.changed == 'true'
+        run: python collector/aggregate.py --data data --out docs
+      - name: Configure Pages
+        if: steps.commit.outputs.changed == 'true'
+        uses: actions/configure-pages@v6
+      - name: Upload site
+        if: steps.commit.outputs.changed == 'true'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs
+
+  deploy:
+    needs: collect
+    if: needs.collect.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
+
+  # Marks the run red (GitHub emails the owner) when a dataset is still missing for an hour.
+  # Kept separate so the data commit and dashboard deploy still happen.
+  alert:
+    needs: collect
+    if: ${{ always() && needs.collect.outputs.rc != '0' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: |
+          rc='${{ needs.collect.outputs.rc }}'
+          if [ "$rc" = "3" ]; then
+            echo "::error::All data was collected, but TfL rejected the TFL_APP_KEY secret, so this run used anonymous access. Re-copy the key into Settings > Secrets > Actions > TFL_APP_KEY."
+          else
+            echo "::error::Collector exit code '$rc': at least one dataset is missing for an hour. See data/_health/ and the collect job log."
+          fi
+          exit 1

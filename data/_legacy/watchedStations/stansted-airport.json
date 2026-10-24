@@ -1,0 +1,11 @@
+{
+  "categories": [
+    "airport",
+    "budget-airlines"
+  ],
+  "crowdingId": "920GSTN1",
+  "disruptionId": "920GSTN1",
+  "slug": "stansted-airport",
+  "trackArrivals": true,
+  "trackCrowding": true
+}

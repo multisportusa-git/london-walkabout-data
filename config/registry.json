@@ -1,0 +1,1624 @@
+{
+ "statusModes": [
+  "tube,dlr,overground,elizabeth-line,tram,cable-car,national-rail,replacement-bus",
+  "river-bus"
+ ],
+ "stations": [
+  {
+   "slug": "abbey-wood",
+   "disruptionId": "HUBABW",
+   "crowdingId": "910GABWDXR",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "acton-main-line",
+   "disruptionId": "910GACTONML",
+   "crowdingId": "910GACTONML",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "baker-street",
+   "disruptionId": "940GZZLUBST",
+   "crowdingId": "940GZZLUBST",
+   "categories": [
+    "worst-offender"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUBST"
+   ]
+  },
+  {
+   "slug": "bank",
+   "disruptionId": "940GZZLUBNK",
+   "crowdingId": "940GZZLUBNK",
+   "categories": [
+    "core-interchange"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUBNK"
+   ]
+  },
+  {
+   "slug": "blackfriars",
+   "disruptionId": "HUBBFR",
+   "crowdingId": "940GZZLUBKF",
+   "categories": [
+    "rail-hub"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUBKF"
+   ]
+  },
+  {
+   "slug": "bond-street",
+   "disruptionId": "HUBBDS",
+   "crowdingId": "940GZZLUBND",
+   "categories": [
+    "elizabeth-line",
+    "tourist"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "brentwood",
+   "disruptionId": "910GBRTWOOD",
+   "crowdingId": "910GBRTWOOD",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "burnham",
+   "disruptionId": "910GBNHAM",
+   "crowdingId": "910GBNHAM",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "camden-town",
+   "disruptionId": "940GZZLUCTN",
+   "crowdingId": "940GZZLUCTN",
+   "categories": [
+    "core-interchange"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUCTN"
+   ]
+  },
+  {
+   "slug": "canary-wharf",
+   "disruptionId": "HUBCAW",
+   "crowdingId": "940GZZLUCYF",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUCYF",
+    "910GCANWHRF",
+    "940GZZDLCAN"
+   ]
+  },
+  {
+   "slug": "cannon-street",
+   "disruptionId": "HUBCST",
+   "crowdingId": "940GZZLUCST",
+   "categories": [
+    "rail-hub"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUCST"
+   ]
+  },
+  {
+   "slug": "chadwell-heath",
+   "disruptionId": "910GCHDWLHT",
+   "crowdingId": "910GCHDWLHT",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "charing-cross",
+   "disruptionId": "HUBCHX",
+   "crowdingId": "940GZZLUCHX",
+   "categories": [
+    "rail-hub"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUCHX"
+   ]
+  },
+  {
+   "slug": "charlton",
+   "disruptionId": "910GCRLN",
+   "crowdingId": "910GCRLN",
+   "categories": [
+    "requested"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "910GCRLN"
+   ]
+  },
+  {
+   "slug": "covent-garden",
+   "disruptionId": "940GZZLUCGN",
+   "crowdingId": "940GZZLUCGN",
+   "categories": [
+    "tourist"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "custom-house",
+   "disruptionId": "HUBCUS",
+   "crowdingId": "940GZZDLCUS",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "ealing-broadway",
+   "disruptionId": "HUBEAL",
+   "crowdingId": "940GZZLUEBY",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "embankment",
+   "disruptionId": "940GZZLUEMB",
+   "crowdingId": "940GZZLUEMB",
+   "categories": [
+    "tourist"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "euston",
+   "disruptionId": "HUBEUS",
+   "crowdingId": "940GZZLUEUS",
+   "categories": [
+    "rail-hub"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUEUS",
+    "910GEUSTON"
+   ]
+  },
+  {
+   "slug": "farringdon",
+   "disruptionId": "HUBZFD",
+   "crowdingId": "940GZZLUFCN",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "fenchurch-street",
+   "disruptionId": "910GFENCHRS",
+   "crowdingId": "910GFENCHRS",
+   "categories": [
+    "rail-hub"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "910GFENCHRS"
+   ]
+  },
+  {
+   "slug": "forest-gate",
+   "disruptionId": "910GFRSTGT",
+   "crowdingId": "910GFRSTGT",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "gatwick-airport",
+   "disruptionId": "920GLGW0",
+   "crowdingId": "920GLGW0",
+   "categories": [
+    "airport",
+    "budget-airlines"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "920GLGW0"
+   ]
+  },
+  {
+   "slug": "gidea-park",
+   "disruptionId": "910GGIDEAPK",
+   "crowdingId": "910GGIDEAPK",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "goodmayes",
+   "disruptionId": "910GGODMAYS",
+   "crowdingId": "910GGODMAYS",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "green-park",
+   "disruptionId": "940GZZLUGPK",
+   "crowdingId": "940GZZLUGPK",
+   "categories": [
+    "worst-offender",
+    "tourist"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUGPK"
+   ]
+  },
+  {
+   "slug": "greenwich",
+   "disruptionId": "HUBGNW",
+   "crowdingId": "940GZZDLGRE",
+   "categories": [
+    "tourist"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "hanwell",
+   "disruptionId": "910GHANWELL",
+   "crowdingId": "910GHANWELL",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "harold-wood",
+   "disruptionId": "910GHRLDWOD",
+   "crowdingId": "910GHRLDWOD",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "hayes-and-harlington",
+   "disruptionId": "910GHAYESAH",
+   "crowdingId": "910GHAYESAH",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "heathrow-terminal-4",
+   "disruptionId": "HUBHX4",
+   "crowdingId": "940GZZLUHR4",
+   "categories": [
+    "airport",
+    "elizabeth-line"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUHR4",
+    "910GHTRWTM4"
+   ]
+  },
+  {
+   "slug": "heathrow-terminal-5",
+   "disruptionId": "HUBHX5",
+   "crowdingId": "940GZZLUHR5",
+   "categories": [
+    "airport",
+    "elizabeth-line"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUHR5",
+    "910GHTRWTM5"
+   ]
+  },
+  {
+   "slug": "heathrow-terminals-2-3",
+   "disruptionId": "HUBH13",
+   "crowdingId": "940GZZLUHRC",
+   "categories": [
+    "airport",
+    "elizabeth-line"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUHRC",
+    "910GHTRWAPT"
+   ]
+  },
+  {
+   "slug": "ilford",
+   "disruptionId": "910GILFORD",
+   "crowdingId": "910GILFORD",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "iver",
+   "disruptionId": "910GIVER",
+   "crowdingId": "910GIVER",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "kings-cross-st-pancras",
+   "disruptionId": "HUBKGX",
+   "crowdingId": "940GZZLUKSX",
+   "categories": [
+    "worst-offender",
+    "rail-hub",
+    "eurostar"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUKSX"
+   ]
+  },
+  {
+   "slug": "langley",
+   "disruptionId": "910GLANGLEY",
+   "crowdingId": "910GLANGLEY",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "leicester-square",
+   "disruptionId": "940GZZLULSQ",
+   "crowdingId": "940GZZLULSQ",
+   "categories": [
+    "tourist"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLULSQ"
+   ]
+  },
+  {
+   "slug": "liverpool-street",
+   "disruptionId": "HUBLST",
+   "crowdingId": "940GZZLULVT",
+   "categories": [
+    "worst-offender",
+    "rail-hub",
+    "elizabeth-line"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLULVT",
+    "910GLIVST",
+    "910GLIVSTLL"
+   ]
+  },
+  {
+   "slug": "london-bridge",
+   "disruptionId": "HUBLBG",
+   "crowdingId": "940GZZLULNB",
+   "categories": [
+    "rail-hub"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLULNB"
+   ]
+  },
+  {
+   "slug": "london-city-airport",
+   "disruptionId": "HUBLCY",
+   "crowdingId": "940GZZDLLCA",
+   "categories": [
+    "airport"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "luton-airport",
+   "disruptionId": "910GLUTOAPY",
+   "crowdingId": "910GLUTOAPY",
+   "categories": [
+    "airport",
+    "budget-airlines"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "910GLUTOAPY"
+   ]
+  },
+  {
+   "slug": "maidenhead",
+   "disruptionId": "910GMDNHEAD",
+   "crowdingId": "910GMDNHEAD",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "manor-park",
+   "disruptionId": "910GMANRPK",
+   "crowdingId": "910GMANRPK",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "maryland",
+   "disruptionId": "910GMRYLAND",
+   "crowdingId": "910GMRYLAND",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "marylebone",
+   "disruptionId": "HUBMYB",
+   "crowdingId": "940GZZLUMYB",
+   "categories": [
+    "rail-hub"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUMYB"
+   ]
+  },
+  {
+   "slug": "monument",
+   "disruptionId": "940GZZLUMMT",
+   "crowdingId": "940GZZLUMMT",
+   "categories": [
+    "core-interchange"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUMMT"
+   ]
+  },
+  {
+   "slug": "moorgate",
+   "disruptionId": "HUBZMG",
+   "crowdingId": "940GZZLUMGT",
+   "categories": [
+    "rail-hub"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUMGT"
+   ]
+  },
+  {
+   "slug": "notting-hill-gate",
+   "disruptionId": "940GZZLUNHG",
+   "crowdingId": "940GZZLUNHG",
+   "categories": [
+    "tourist"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "oxford-circus",
+   "disruptionId": "940GZZLUOXC",
+   "crowdingId": "940GZZLUOXC",
+   "categories": [
+    "worst-offender",
+    "tourist"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUOXC"
+   ]
+  },
+  {
+   "slug": "paddington",
+   "disruptionId": "HUBPAD",
+   "crowdingId": "940GZZLUPAC",
+   "categories": [
+    "rail-hub",
+    "elizabeth-line"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUPAC",
+    "910GPADTLL",
+    "910GPADTON",
+    "940GZZLUPAH"
+   ]
+  },
+  {
+   "slug": "piccadilly-circus",
+   "disruptionId": "940GZZLUPCC",
+   "crowdingId": "940GZZLUPCC",
+   "categories": [
+    "tourist"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUPCC"
+   ]
+  },
+  {
+   "slug": "reading",
+   "disruptionId": "910GRDNGSTN",
+   "crowdingId": "910GRDNGSTN",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "romford",
+   "disruptionId": "910GROMFORD",
+   "crowdingId": "910GROMFORD",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "seven-kings",
+   "disruptionId": "910GSVNKNGS",
+   "crowdingId": "910GSVNKNGS",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "shenfield",
+   "disruptionId": "910GSHENFLD",
+   "crowdingId": "910GSHENFLD",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "slough",
+   "disruptionId": "910GSLOUGH",
+   "crowdingId": "910GSLOUGH",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "south-kensington",
+   "disruptionId": "940GZZLUSKS",
+   "crowdingId": "940GZZLUSKS",
+   "categories": [
+    "tourist"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "southall",
+   "disruptionId": "910GSTHALL",
+   "crowdingId": "910GSTHALL",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "st-james-park",
+   "disruptionId": "940GZZLUSJP",
+   "crowdingId": "940GZZLUSJP",
+   "categories": [
+    "tourist"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "stansted-airport",
+   "disruptionId": "920GSTN1",
+   "crowdingId": "920GSTN1",
+   "categories": [
+    "airport",
+    "budget-airlines"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "920GSTN1"
+   ]
+  },
+  {
+   "slug": "stratford",
+   "disruptionId": "HUBSRA",
+   "crowdingId": "940GZZLUSTD",
+   "categories": [
+    "worst-offender",
+    "rail-hub",
+    "elizabeth-line"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUSTD",
+    "910GSTFD",
+    "940GZZDLSTD"
+   ]
+  },
+  {
+   "slug": "taplow",
+   "disruptionId": "910GTAPLOW",
+   "crowdingId": "910GTAPLOW",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "tottenham-court-road",
+   "disruptionId": "HUBTCR",
+   "crowdingId": "940GZZLUTCR",
+   "categories": [
+    "elizabeth-line",
+    "tourist"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUTCR",
+    "910GTOTCTRD"
+   ]
+  },
+  {
+   "slug": "tower-gateway",
+   "disruptionId": "HUBTOG",
+   "crowdingId": "940GZZDLTWG",
+   "categories": [
+    "tourist"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "tower-hill",
+   "disruptionId": "940GZZLUTWH",
+   "crowdingId": "940GZZLUTWH",
+   "categories": [
+    "tourist"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "twyford",
+   "disruptionId": "910GTWYFORD",
+   "crowdingId": "910GTWYFORD",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "victoria",
+   "disruptionId": "HUBVIC",
+   "crowdingId": "940GZZLUVIC",
+   "categories": [
+    "rail-hub"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUVIC"
+   ]
+  },
+  {
+   "slug": "waterloo",
+   "disruptionId": "HUBWAT",
+   "crowdingId": "940GZZLUWLO",
+   "categories": [
+    "worst-offender",
+    "rail-hub"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZLUWLO"
+   ]
+  },
+  {
+   "slug": "west-drayton",
+   "disruptionId": "910GWDRYTON",
+   "crowdingId": "910GWDRYTON",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "west-ealing",
+   "disruptionId": "910GWEALING",
+   "crowdingId": "910GWEALING",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "westminster",
+   "disruptionId": "HUBWSM",
+   "crowdingId": "940GZZLUWSM",
+   "categories": [
+    "tourist"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "whitechapel",
+   "disruptionId": "HUBZWL",
+   "crowdingId": "940GZZLUWPL",
+   "categories": [
+    "elizabeth-line"
+   ],
+   "trackCrowding": false,
+   "trackArrivals": false
+  },
+  {
+   "slug": "woolwich-arsenal",
+   "disruptionId": "HUBWWA",
+   "crowdingId": "940GZZDLWLA",
+   "categories": [
+    "requested"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "940GZZDLWLA"
+   ]
+  },
+  {
+   "slug": "woolwich-elizabeth-line",
+   "disruptionId": "910GWOLWXR",
+   "crowdingId": "910GWOLWXR",
+   "categories": [
+    "elizabeth-line",
+    "requested"
+   ],
+   "trackCrowding": true,
+   "trackArrivals": true,
+   "arrivalsIds": [
+    "910GWOLWXR"
+   ]
+  }
+ ],
+ "piers": [
+  {
+   "slug": "bankside-pier",
+   "naptanId": "4900SWK0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "barking-riverside-pier",
+   "naptanId": "4900BRVS0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "battersea-power-station-pier",
+   "naptanId": "4900BSP",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "blackfriars-pier",
+   "naptanId": "4900BFR0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "cadogan-pier",
+   "naptanId": "4900BSE0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "canary-wharf-pier",
+   "naptanId": "4900CAW0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "chelsea-harbour-pier",
+   "naptanId": "4900CHP0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "embankment-pier",
+   "naptanId": "4900EMB0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "greenland-surrey-quays-pier",
+   "naptanId": "4900GLP0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "greenwich-pier",
+   "naptanId": "4900GNW0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "london-bridge-city-pier",
+   "naptanId": "4900LBR0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "london-eye-waterloo-pier",
+   "naptanId": "4900WMP0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "masthouse-terrace-pier",
+   "naptanId": "4900MHT0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "millbank-pier",
+   "naptanId": "4900MBK0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "north-greenwich-pier",
+   "naptanId": "4900MIL0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "putney-pier",
+   "naptanId": "4900PUT0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "rotherhithe-pier",
+   "naptanId": "4900NEL0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "tower-pier",
+   "naptanId": "4900TMP0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "vauxhall-st-georges-wharf-pier",
+   "naptanId": "4900SGW0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "westminster-pier",
+   "naptanId": "4900WMR0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "woolwich-ferry-north-pier",
+   "naptanId": "4900WWC0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "woolwich-ferry-south-pier",
+   "naptanId": "4900WWS0",
+   "categories": [
+    "ferry"
+   ]
+  },
+  {
+   "slug": "woolwich-royal-arsenal-pier",
+   "naptanId": "4900WAS0",
+   "categories": [
+    "ferry"
+   ]
+  }
+ ],
+ "lines": [
+  {
+   "id": "bakerloo",
+   "name": "Bakerloo",
+   "mode": "tube",
+   "hours": {
+    "is24h": false,
+    "nightTube": false,
+    "standardSaturdayClose": "01:30",
+    "standardSaturdayOpen": "05:30",
+    "standardSundayClose": "23:30",
+    "standardSundayOpen": "05:30",
+    "standardWeekdayClose": "00:30",
+    "standardWeekdayOpen": "05:30"
+   }
+  },
+  {
+   "id": "central",
+   "name": "Central",
+   "mode": "tube",
+   "hours": {
+    "is24h": false,
+    "nightTube": true,
+    "nightTubeFriSat": true,
+    "standardSaturdayClose": "01:30",
+    "standardSaturdayOpen": "05:30",
+    "standardSundayClose": "23:30",
+    "standardSundayOpen": "05:30",
+    "standardWeekdayClose": "00:30",
+    "standardWeekdayOpen": "05:30"
+   }
+  },
+  {
+   "id": "circle",
+   "name": "Circle",
+   "mode": "tube",
+   "hours": {
+    "is24h": false,
+    "nightTube": false,
+    "standardSaturdayClose": "01:30",
+    "standardSaturdayOpen": "05:30",
+    "standardSundayClose": "23:30",
+    "standardSundayOpen": "05:30",
+    "standardWeekdayClose": "00:30",
+    "standardWeekdayOpen": "05:30"
+   }
+  },
+  {
+   "id": "district",
+   "name": "District",
+   "mode": "tube",
+   "hours": {
+    "is24h": false,
+    "nightTube": false,
+    "standardSaturdayClose": "01:30",
+    "standardSaturdayOpen": "05:30",
+    "standardSundayClose": "23:30",
+    "standardSundayOpen": "05:30",
+    "standardWeekdayClose": "00:30",
+    "standardWeekdayOpen": "05:30"
+   }
+  },
+  {
+   "id": "dlr",
+   "name": "DLR",
+   "mode": "dlr",
+   "hours": {
+    "is24h": false,
+    "nightTube": false,
+    "standardSaturdayClose": "01:00",
+    "standardSaturdayOpen": "06:00",
+    "standardSundayClose": "23:30",
+    "standardSundayOpen": "07:00",
+    "standardWeekdayClose": "00:30",
+    "standardWeekdayOpen": "05:30"
+   }
+  },
+  {
+   "id": "elizabeth-line",
+   "name": "Elizabeth Line",
+   "mode": "elizabeth-line",
+   "hours": {
+    "is24h": false,
+    "nightTube": false,
+    "standardSaturdayClose": "00:30",
+    "standardSaturdayOpen": "05:30",
+    "standardSundayClose": "22:30",
+    "standardSundayOpen": "06:30",
+    "standardWeekdayClose": "23:30",
+    "standardWeekdayOpen": "05:00"
+   }
+  },
+  {
+   "id": "hammersmith-city",
+   "name": "Hammersmith & City",
+   "mode": "tube",
+   "hours": {
+    "is24h": false,
+    "nightTube": false,
+    "standardSaturdayClose": "01:30",
+    "standardSaturdayOpen": "05:30",
+    "standardSundayClose": "23:30",
+    "standardSundayOpen": "05:30",
+    "standardWeekdayClose": "00:30",
+    "standardWeekdayOpen": "05:30"
+   }
+  },
+  {
+   "id": "jubilee",
+   "name": "Jubilee",
+   "mode": "tube",
+   "hours": {
+    "is24h": false,
+    "nightTube": true,
+    "nightTubeFriSat": true,
+    "standardSaturdayClose": "01:30",
+    "standardSaturdayOpen": "05:30",
+    "standardSundayClose": "23:30",
+    "standardSundayOpen": "05:30",
+    "standardWeekdayClose": "00:30",
+    "standardWeekdayOpen": "05:30"
+   }
+  },
+  {
+   "id": "metropolitan",
+   "name": "Metropolitan",
+   "mode": "tube",
+   "hours": {
+    "is24h": false,
+    "nightTube": false,
+    "standardSaturdayClose": "01:30",
+    "standardSaturdayOpen": "05:30",
+    "standardSundayClose": "23:30",
+    "standardSundayOpen": "05:30",
+    "standardWeekdayClose": "00:30",
+    "standardWeekdayOpen": "05:30"
+   }
+  },
+  {
+   "id": "northern",
+   "name": "Northern",
+   "mode": "tube",
+   "hours": {
+    "is24h": false,
+    "nightTube": true,
+    "nightTubeFriSat": true,
+    "standardSaturdayClose": "01:30",
+    "standardSaturdayOpen": "05:30",
+    "standardSundayClose": "23:30",
+    "standardSundayOpen": "05:30",
+    "standardWeekdayClose": "00:30",
+    "standardWeekdayOpen": "05:30"
+   }
+  },
+  {
+   "id": "overground-windrush",
+   "name": "Overground (Windrush)",
+   "mode": "overground",
+   "hours": {
+    "is24h": false,
+    "nightTube": true,
+    "nightTubeFriSat": true,
+    "standardSaturdayClose": "01:30",
+    "standardSaturdayOpen": "05:30",
+    "standardSundayClose": "23:30",
+    "standardSundayOpen": "05:30",
+    "standardWeekdayClose": "00:30",
+    "standardWeekdayOpen": "05:30"
+   }
+  },
+  {
+   "id": "piccadilly",
+   "name": "Piccadilly",
+   "mode": "tube",
+   "hours": {
+    "is24h": false,
+    "nightTube": true,
+    "nightTubeFriSat": true,
+    "standardSaturdayClose": "01:30",
+    "standardSaturdayOpen": "05:30",
+    "standardSundayClose": "23:30",
+    "standardSundayOpen": "05:30",
+    "standardWeekdayClose": "00:30",
+    "standardWeekdayOpen": "05:30"
+   }
+  },
+  {
+   "id": "river-bus",
+   "name": "River Bus / Ferries",
+   "mode": "river-bus",
+   "hours": {
+    "is24h": false,
+    "nightTube": false,
+    "standardSaturdayClose": "23:00",
+    "standardSaturdayOpen": "08:00",
+    "standardSundayClose": "23:00",
+    "standardSundayOpen": "10:00",
+    "standardWeekdayClose": "23:00",
+    "standardWeekdayOpen": "06:00"
+   }
+  },
+  {
+   "id": "victoria",
+   "name": "Victoria",
+   "mode": "tube",
+   "hours": {
+    "is24h": false,
+    "nightTube": true,
+    "nightTubeFriSat": true,
+    "standardSaturdayClose": "01:30",
+    "standardSaturdayOpen": "05:30",
+    "standardSundayClose": "23:30",
+    "standardSundayOpen": "05:30",
+    "standardWeekdayClose": "00:30",
+    "standardWeekdayOpen": "05:30"
+   }
+  }
+ ],
+ "crowdingNetworkIds": [
+  "910GABWDXR",
+  "910GACTONML",
+  "910GBNHAM",
+  "910GBONDST",
+  "910GBRTWOOD",
+  "910GCANWHRF",
+  "910GCHDWLHT",
+  "910GCUSTMHS",
+  "910GEALINGB",
+  "910GFRNDXR",
+  "910GFRSTGT",
+  "910GGIDEAPK",
+  "910GGODMAYS",
+  "910GHANWELL",
+  "910GHAYESAH",
+  "910GHRLDWOD",
+  "910GHTRWAPT",
+  "910GHTRWTM4",
+  "910GHTRWTM5",
+  "910GILFORD",
+  "910GIVER",
+  "910GLANGLEY",
+  "910GLIVST",
+  "910GLIVSTLL",
+  "910GMANRPK",
+  "910GMDNHEAD",
+  "910GMRYLAND",
+  "910GPADTLL",
+  "910GPADTON",
+  "910GRDNGSTN",
+  "910GROMFORD",
+  "910GSHENFLD",
+  "910GSLOUGH",
+  "910GSTFD",
+  "910GSTHALL",
+  "910GSVNKNGS",
+  "910GTAPLOW",
+  "910GTOTCTRD",
+  "910GTWYFORD",
+  "910GWCHAPXR",
+  "910GWDRYTON",
+  "910GWEALING",
+  "910GWOLWXR",
+  "940GZZBPSUST",
+  "940GZZLUACT",
+  "940GZZLUACY",
+  "940GZZLUADE",
+  "940GZZLUAGL",
+  "940GZZLUALD",
+  "940GZZLUALP",
+  "940GZZLUAMS",
+  "940GZZLUASG",
+  "940GZZLUASL",
+  "940GZZLUBBB",
+  "940GZZLUBBN",
+  "940GZZLUBDS",
+  "940GZZLUBEC",
+  "940GZZLUBKE",
+  "940GZZLUBKF",
+  "940GZZLUBKG",
+  "940GZZLUBKH",
+  "940GZZLUBLG",
+  "940GZZLUBLM",
+  "940GZZLUBLR",
+  "940GZZLUBMY",
+  "940GZZLUBND",
+  "940GZZLUBNK",
+  "940GZZLUBOR",
+  "940GZZLUBOS",
+  "940GZZLUBSC",
+  "940GZZLUBST",
+  "940GZZLUBTK",
+  "940GZZLUBTX",
+  "940GZZLUBWR",
+  "940GZZLUBWT",
+  "940GZZLUBXN",
+  "940GZZLUBZP",
+  "940GZZLUCAL",
+  "940GZZLUCAR",
+  "940GZZLUCFM",
+  "940GZZLUCGN",
+  "940GZZLUCGT",
+  "940GZZLUCHL",
+  "940GZZLUCHX",
+  "940GZZLUCKS",
+  "940GZZLUCND",
+  "940GZZLUCPC",
+  "940GZZLUCPK",
+  "940GZZLUCPN",
+  "940GZZLUCPS",
+  "940GZZLUCSD",
+  "940GZZLUCSM",
+  "940GZZLUCST",
+  "940GZZLUCTN",
+  "940GZZLUCWL",
+  "940GZZLUCWP",
+  "940GZZLUCWR",
+  "940GZZLUCXY",
+  "940GZZLUCYD",
+  "940GZZLUCYF",
+  "940GZZLUDBN",
+  "940GZZLUDGE",
+  "940GZZLUDGY",
+  "940GZZLUDOH",
+  "940GZZLUEAC",
+  "940GZZLUEAE",
+  "940GZZLUEAN",
+  "940GZZLUEBY",
+  "940GZZLUECM",
+  "940GZZLUECT",
+  "940GZZLUEFY",
+  "940GZZLUEGW",
+  "940GZZLUEHM",
+  "940GZZLUEMB",
+  "940GZZLUEPG",
+  "940GZZLUEPK",
+  "940GZZLUEPY",
+  "940GZZLUERB",
+  "940GZZLUERC",
+  "940GZZLUESQ",
+  "940GZZLUEUS",
+  "940GZZLUFBY",
+  "940GZZLUFCN",
+  "940GZZLUFLP",
+  "940GZZLUFPK",
+  "940GZZLUFYC",
+  "940GZZLUFYR",
+  "940GZZLUGBY",
+  "940GZZLUGDG",
+  "940GZZLUGFD",
+  "940GZZLUGGH",
+  "940GZZLUGGN",
+  "940GZZLUGHK",
+  "940GZZLUGPK",
+  "940GZZLUGPS",
+  "940GZZLUGTH",
+  "940GZZLUGTR",
+  "940GZZLUHAI",
+  "940GZZLUHAW",
+  "940GZZLUHBN",
+  "940GZZLUHBT",
+  "940GZZLUHCH",
+  "940GZZLUHCL",
+  "940GZZLUHGD",
+  "940GZZLUHGR",
+  "940GZZLUHGT",
+  "940GZZLUHLT",
+  "940GZZLUHNX",
+  "940GZZLUHOH",
+  "940GZZLUHPC",
+  "940GZZLUHPK",
+  "940GZZLUHR4",
+  "940GZZLUHR5",
+  "940GZZLUHRC",
+  "940GZZLUHSC",
+  "940GZZLUHSD",
+  "940GZZLUHSK",
+  "940GZZLUHSN",
+  "940GZZLUHTD",
+  "940GZZLUHWC",
+  "940GZZLUHWE",
+  "940GZZLUHWT",
+  "940GZZLUHWY",
+  "940GZZLUICK",
+  "940GZZLUKBN",
+  "940GZZLUKBY",
+  "940GZZLUKEN",
+  "940GZZLUKNB",
+  "940GZZLUKNG",
+  "940GZZLUKOY",
+  "940GZZLUKPK",
+  "940GZZLUKSH",
+  "940GZZLUKSL",
+  "940GZZLUKSX",
+  "940GZZLUKWG",
+  "940GZZLULAD",
+  "940GZZLULBN",
+  "940GZZLULGN",
+  "940GZZLULGT",
+  "940GZZLULNB",
+  "940GZZLULRD",
+  "940GZZLULSQ",
+  "940GZZLULVT",
+  "940GZZLULYN",
+  "940GZZLULYS",
+  "940GZZLUMBA",
+  "940GZZLUMDN",
+  "940GZZLUMED",
+  "940GZZLUMGT",
+  "940GZZLUMHL",
+  "940GZZLUMMT",
+  "940GZZLUMPK",
+  "940GZZLUMRH",
+  "940GZZLUMSH",
+  "940GZZLUMTC",
+  "940GZZLUMVL",
+  "940GZZLUMYB",
+  "940GZZLUNAN",
+  "940GZZLUNBP",
+  "940GZZLUNDN",
+  "940GZZLUNEN",
+  "940GZZLUNFD",
+  "940GZZLUNGW",
+  "940GZZLUNHA",
+  "940GZZLUNHG",
+  "940GZZLUNHT",
+  "940GZZLUNKP",
+  "940GZZLUNOW",
+  "940GZZLUNWH",
+  "940GZZLUNWY",
+  "940GZZLUOAK",
+  "940GZZLUODS",
+  "940GZZLUOSY",
+  "940GZZLUOVL",
+  "940GZZLUOXC",
+  "940GZZLUPAC",
+  "940GZZLUPAH",
+  "940GZZLUPCC",
+  "940GZZLUPCO",
+  "940GZZLUPKR",
+  "940GZZLUPLW",
+  "940GZZLUPNR",
+  "940GZZLUPRD",
+  "940GZZLUPSG",
+  "940GZZLUPVL",
+  "940GZZLUPYB",
+  "940GZZLUQBY",
+  "940GZZLUQPS",
+  "940GZZLUQWY",
+  "940GZZLURBG",
+  "940GZZLURGP",
+  "940GZZLURKW",
+  "940GZZLURMD",
+  "940GZZLURSG",
+  "940GZZLURSM",
+  "940GZZLURSP",
+  "940GZZLURSQ",
+  "940GZZLURVP",
+  "940GZZLURVY",
+  "940GZZLURYL",
+  "940GZZLURYO",
+  "940GZZLUSBC",
+  "940GZZLUSBM",
+  "940GZZLUSEA",
+  "940GZZLUSFB",
+  "940GZZLUSFS",
+  "940GZZLUSGN",
+  "940GZZLUSGP",
+  "940GZZLUSGT",
+  "940GZZLUSHH",
+  "940GZZLUSJP",
+  "940GZZLUSJW",
+  "940GZZLUSKS",
+  "940GZZLUSKT",
+  "940GZZLUSKW",
+  "940GZZLUSNB",
+  "940GZZLUSPU",
+  "940GZZLUSRP",
+  "940GZZLUSSQ",
+  "940GZZLUSTD",
+  "940GZZLUSTM",
+  "940GZZLUSUH",
+  "940GZZLUSUT",
+  "940GZZLUSVS",
+  "940GZZLUSWC",
+  "940GZZLUSWF",
+  "940GZZLUSWK",
+  "940GZZLUSWN",
+  "940GZZLUTAW",
+  "940GZZLUTBC",
+  "940GZZLUTBY",
+  "940GZZLUTCR",
+  "940GZZLUTFP",
+  "940GZZLUTHB",
+  "940GZZLUTMH",
+  "940GZZLUTMP",
+  "940GZZLUTNG",
+  "940GZZLUTPN",
+  "940GZZLUTWH",
+  "940GZZLUUPB",
+  "940GZZLUUPK",
+  "940GZZLUUPM",
+  "940GZZLUUPY",
+  "940GZZLUUXB",
+  "940GZZLUVIC",
+  "940GZZLUVXL",
+  "940GZZLUWAF",
+  "940GZZLUWBN",
+  "940GZZLUWCY",
+  "940GZZLUWFN",
+  "940GZZLUWHM",
+  "940GZZLUWHP",
+  "940GZZLUWHW",
+  "940GZZLUWIG",
+  "940GZZLUWIM",
+  "940GZZLUWIP",
+  "940GZZLUWJN",
+  "940GZZLUWKA",
+  "940GZZLUWKN",
+  "940GZZLUWLA",
+  "940GZZLUWLO",
+  "940GZZLUWOF",
+  "940GZZLUWOG",
+  "940GZZLUWOP",
+  "940GZZLUWPL",
+  "940GZZLUWRP",
+  "940GZZLUWRR",
+  "940GZZLUWSD",
+  "940GZZLUWSM",
+  "940GZZLUWSP",
+  "940GZZLUWTA",
+  "940GZZLUWWL",
+  "940GZZLUWYC",
+  "940GZZLUWYP",
+  "940GZZNEUGST"
+ ],
+ "networkDisruptionModes": {
+  "stopRail": "tube,dlr,overground,elizabeth-line,tram,cable-car,river-bus",
+  "stopBus": "bus",
+  "stopNationalRail": "national-rail",
+  "lineBus": "bus",
+  "lineNationalRail": "national-rail"
+ },
+ "nationalRailStations": [
+  "CTN",
+  "WWA",
+  "GNW",
+  "LEW",
+  "ABW",
+  "LBG",
+  "CST",
+  "CHX",
+  "WAE",
+  "BFR",
+  "CTK",
+  "ZFD",
+  "STP",
+  "VIC",
+  "ECR",
+  "GTW",
+  "LTN",
+  "SSD",
+  "LST",
+  "PAD",
+  "HXX",
+  "FST",
+  "WAT",
+  "EUS",
+  "SRA"
+ ],
+ "nationalRailIncidentsUrl": "https://api1.raildata.org.uk/1010-knowlegebase-incidents-xml-feed1_0/incidents.xml",
+ "nationalRailStationsUrl": "https://api1.raildata.org.uk/1010-nationalrail-knowledgebase-stations-feed-_json_---production5_0/stations"
+}

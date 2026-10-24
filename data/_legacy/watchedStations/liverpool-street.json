@@ -1,0 +1,12 @@
+{
+  "categories": [
+    "worst-offender",
+    "rail-hub",
+    "elizabeth-line"
+  ],
+  "crowdingId": "940GZZLULVT",
+  "disruptionId": "HUBLST",
+  "slug": "liverpool-street",
+  "trackArrivals": true,
+  "trackCrowding": true
+}

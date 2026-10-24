@@ -1,0 +1,13 @@
+{
+  "is24h": false,
+  "lineId": "elizabeth-line",
+  "lineName": "Elizabeth Line",
+  "mode": "elizabeth-line",
+  "nightTube": false,
+  "standardSaturdayClose": "00:30",
+  "standardSaturdayOpen": "05:30",
+  "standardSundayClose": "22:30",
+  "standardSundayOpen": "06:30",
+  "standardWeekdayClose": "23:30",
+  "standardWeekdayOpen": "05:00"
+}

@@ -1,0 +1,11 @@
+{
+  "categories": [
+    "airport",
+    "budget-airlines"
+  ],
+  "crowdingId": "910GLUTOAPY",
+  "disruptionId": "910GLUTOAPY",
+  "slug": "luton-airport",
+  "trackArrivals": true,
+  "trackCrowding": true
+}

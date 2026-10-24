@@ -1,0 +1,11 @@
+{
+  "categories": [
+    "airport",
+    "budget-airlines"
+  ],
+  "crowdingId": "920GLGW0",
+  "disruptionId": "920GLGW0",
+  "slug": "gatwick-airport",
+  "trackArrivals": true,
+  "trackCrowding": true
+}

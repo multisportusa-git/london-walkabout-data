@@ -1,0 +1,13 @@
+{
+  "is24h": false,
+  "lineId": "dlr",
+  "lineName": "DLR",
+  "mode": "dlr",
+  "nightTube": false,
+  "standardSaturdayClose": "01:00",
+  "standardSaturdayOpen": "06:00",
+  "standardSundayClose": "23:30",
+  "standardSundayOpen": "07:00",
+  "standardWeekdayClose": "00:30",
+  "standardWeekdayOpen": "05:30"
+}

@@ -1,0 +1,12 @@
+{
+  "categories": [
+    "worst-offender",
+    "rail-hub",
+    "elizabeth-line"
+  ],
+  "crowdingId": "940GZZLUSTD",
+  "disruptionId": "HUBSRA",
+  "slug": "stratford",
+  "trackArrivals": true,
+  "trackCrowding": true
+}

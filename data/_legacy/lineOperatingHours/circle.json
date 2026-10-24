@@ -1,0 +1,13 @@
+{
+  "is24h": false,
+  "lineId": "circle",
+  "lineName": "Circle",
+  "mode": "tube",
+  "nightTube": false,
+  "standardSaturdayClose": "01:30",
+  "standardSaturdayOpen": "05:30",
+  "standardSundayClose": "23:30",
+  "standardSundayOpen": "05:30",
+  "standardWeekdayClose": "00:30",
+  "standardWeekdayOpen": "05:30"
+}

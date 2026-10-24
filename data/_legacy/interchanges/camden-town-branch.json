@@ -1,0 +1,23 @@
+{
+  "confidence": "publishedDiagram",
+  "context": "Northern line — Bank vs Charing Cross branch",
+  "order": 1,
+  "stationName": "Camden Town",
+  "steps": [
+    {
+      "confidence": "publishedDiagram",
+      "cueKind": "checkBoard",
+      "cueText": "Northbound and southbound each run both the Bank branch and the Charing Cross branch from the same platform.",
+      "instruction": "Don't trust the platform side as your only cue.",
+      "order": 1
+    },
+    {
+      "confidence": "publishedDiagram",
+      "cueKind": "lookFor",
+      "cueText": "Check the yellow indicator board above the platform, or the train's own destination display, for 'via Bank' or 'via Charing Cross' before boarding.",
+      "instruction": "Confirm the branch, not just the direction.",
+      "order": 2
+    }
+  ],
+  "summary": "Both platforms here serve trains on BOTH branches — which side you're standing on tells you nothing about which branch your train is going to take."
+}

@@ -1,0 +1,23 @@
+{
+  "confidence": "publishedDiagram",
+  "context": "Central · Northern · Waterloo & City · DLR · Monument interchange",
+  "order": 2,
+  "stationName": "Bank / Monument",
+  "steps": [
+    {
+      "confidence": "publishedDiagram",
+      "cueKind": "stairs",
+      "cueText": "This is not a quick change — allow several minutes and expect escalators plus a walk between the Bank and Monument halves of the complex.",
+      "instruction": "Budget real time for this transfer.",
+      "order": 1
+    },
+    {
+      "confidence": "publishedDiagram",
+      "cueKind": "lookFor",
+      "cueText": "The route between lines here isn't a straight corridor — trust the coloured line roundels over your sense of direction.",
+      "instruction": "Follow the line-colour signage the whole way, not just at the start.",
+      "order": 2
+    }
+  ],
+  "summary": "One of the most complex interchanges on the network — walking transfers between some lines here are commonly over five minutes via escalators and passageways, not a simple cross-platform change."
+}

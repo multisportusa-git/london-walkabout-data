@@ -1,0 +1,12 @@
+{
+  "categories": [
+    "worst-offender",
+    "rail-hub",
+    "eurostar"
+  ],
+  "crowdingId": "940GZZLUKSX",
+  "disruptionId": "HUBKGX",
+  "slug": "kings-cross-st-pancras",
+  "trackArrivals": true,
+  "trackCrowding": true
+}

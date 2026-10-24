@@ -1,0 +1,42 @@
+name: watchdog
+
+# Daily gap check. Opens (or comments on) a single 'collector-gap' issue when
+# more than 2 hourly slots are missing for any dataset in the last 48 h.
+on:
+  schedule:
+    - cron: '15 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  actions: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      # Belt and braces against GitHub's 60-day inactivity auto-disable of scheduled workflows.
+      - name: Keep the collect workflow enabled
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/collect.yml/enable" && echo "collect.yml enabled"
+      - name: Verify hourly coverage
+        run: python collector/verify.py --data data --hours 48 --issue-file issue.md
+      - name: Open or update gap issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ ! -s issue.md ]; then echo "no gaps"; exit 0; fi
+          gh label create collector-gap --color D93F0B --description "Missing hourly TfL data" 2>/dev/null || true
+          n=$(gh issue list --label collector-gap --state open --json number -q '.[0].number')
+          if [ -n "$n" ]; then
+            gh issue comment "$n" --body-file issue.md
+          else
+            gh issue create --title "Collector gap: missing hourly data" --label collector-gap --body-file issue.md
+          fi

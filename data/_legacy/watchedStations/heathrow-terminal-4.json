@@ -1,0 +1,11 @@
+{
+  "categories": [
+    "airport",
+    "elizabeth-line"
+  ],
+  "crowdingId": "940GZZLUHR4",
+  "disruptionId": "HUBHX4",
+  "slug": "heathrow-terminal-4",
+  "trackArrivals": true,
+  "trackCrowding": true
+}

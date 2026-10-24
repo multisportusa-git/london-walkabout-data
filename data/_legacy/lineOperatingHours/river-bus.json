@@ -1,0 +1,13 @@
+{
+  "is24h": false,
+  "lineId": "river-bus",
+  "lineName": "River Bus / Ferries",
+  "mode": "river-bus",
+  "nightTube": false,
+  "standardSaturdayClose": "23:00",
+  "standardSaturdayOpen": "08:00",
+  "standardSundayClose": "23:00",
+  "standardSundayOpen": "10:00",
+  "standardWeekdayClose": "23:00",
+  "standardWeekdayOpen": "06:00"
+}

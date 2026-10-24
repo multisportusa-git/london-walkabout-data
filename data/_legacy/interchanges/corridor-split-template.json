@@ -1,0 +1,23 @@
+{
+  "confidence": "templateDraft",
+  "context": "Generic pattern, reconstructed from JB's own junction story",
+  "order": 3,
+  "stationName": "Template — shared corridor splits toward two platforms",
+  "steps": [
+    {
+      "confidence": "templateDraft",
+      "cueKind": "turn",
+      "cueText": "Look for a roundel or hanging sign naming the terminus (not just 'eastbound'/'westbound') before the corridor splits, not after.",
+      "instruction": "At the fork, check for the end-station name before choosing a side.",
+      "order": 1
+    },
+    {
+      "confidence": "templateDraft",
+      "cueKind": "lookFor",
+      "cueText": "An approaching train's sound carries around corners underground — it is not a reliable directional cue by itself.",
+      "instruction": "If nothing names your terminus, don't guess from wind or sound alone.",
+      "order": 2
+    }
+  ],
+  "summary": "Not a specific station yet — this captures the interaction pattern for the exact scenario that started this project: a corridor forks toward two platforms, and the fork isn't clearly labelled with the end-of-line names until you're already committed to one side."
+}

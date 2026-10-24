@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>London Walkabout Data Desk</title>
+<meta name="description" content="Hourly TfL line status, lift, station disruption, crowding and arrivals record.">
+<style>
+:root{--bg:#f6f4ee;--card:#fff;--ink:#16191f;--sub:#5b6472;--rule:#e2ddcf;--accent:#1560c4;--accent2:#c24c08;
+--c0:#2e8b6a;--c1:#e3b341;--c2:#e08a3c;--c3:#7e6bc4;--c4:#d1443f;--c5:#8c8f98;--cm:#e9e5d9;--bar:#1560c4;--warn:#c24c08;--ok:#2e8b6a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101215;--card:#1a1d22;--ink:#f1eee6;--sub:#a3a9b3;--rule:#2d3239;--accent:#6aa8ee;--accent2:#f0862e;
+--c0:#3fb98a;--c1:#e8c04f;--c2:#ec9a4f;--c3:#9a8ae0;--c4:#ef6a64;--c5:#7b808b;--cm:#262a30;--bar:#6aa8ee;--warn:#f0862e;--ok:#3fb98a}}
+:root[data-theme="dark"]{--bg:#101215;--card:#1a1d22;--ink:#f1eee6;--sub:#a3a9b3;--rule:#2d3239;--accent:#6aa8ee;--accent2:#f0862e;
+--c0:#3fb98a;--c1:#e8c04f;--c2:#ec9a4f;--c3:#9a8ae0;--c4:#ef6a64;--c5:#7b808b;--cm:#262a30;--bar:#6aa8ee;--warn:#f0862e;--ok:#3fb98a}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 16px 64px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--accent2);margin:0}
+h1{font-size:26px;line-height:1.15;margin:4px 0 6px;letter-spacing:-.01em}
+.stamp{color:var(--sub);font-size:13px;margin:0}
+#theme{flex:none;border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:99px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer}
+nav{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;gap:6px;overflow-x:auto;padding:10px 0;margin:10px 0 0;border-bottom:1px solid var(--rule);scrollbar-width:none}
+nav a{flex:none;color:var(--sub);text-decoration:none;font-size:13px;font-weight:600;padding:5px 11px;border-radius:99px;border:1px solid var(--rule);background:var(--card)}
+nav a:hover,nav a:focus-visible{color:var(--ink);border-color:var(--accent)}
+section{margin-top:34px;scroll-margin-top:56px}
+h2{font-size:19px;margin:0 0 4px}
+.lede{color:var(--sub);margin:0 0 14px;max-width:70ch;font-size:14px}
+.grid{display:grid;gap:12px}
+.kpis{grid-template-columns:repeat(2,1fr);margin-top:18px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:14px 16px}
+.kpi .n.t{font-size:20px;line-height:1.2}.kpi .n{font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.kpi .l{font-size:12px;color:var(--sub);margin-top:2px}
+h3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub);margin:0 0 10px}
+.row{display:grid;grid-template-columns:minmax(104px,36%) 1fr auto;gap:8px;align-items:center;margin:6px 0;font-size:13px}
+.row .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.track{height:12px;background:var(--cm);border-radius:6px;position:relative;overflow:hidden}
+.fill{position:absolute;left:0;top:0;bottom:0;background:var(--bar);border-radius:6px}
+.mark{position:absolute;top:-2px;bottom:-2px;width:3px;background:var(--ink);border-radius:2px}
+.val{font-weight:700;min-width:44px;text-align:right}
+.small{font-size:12px;color:var(--sub)}
+.cols{grid-template-columns:1fr}
+.cal{display:grid;grid-template-columns:repeat(auto-fill,minmax(14px,1fr));gap:3px;margin:4px 0 12px}
+.cal i{aspect-ratio:1;border-radius:3px;background:var(--cm);display:block}
+.cal i.l1{background:color-mix(in srgb,var(--ok) 25%,var(--cm))}.cal i.l2{background:color-mix(in srgb,var(--ok) 50%,var(--cm))}
+.cal i.l3{background:color-mix(in srgb,var(--ok) 75%,var(--cm))}.cal i.l4{background:var(--ok)}
+.cal i.inc{outline:2px solid var(--warn);outline-offset:-2px}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--sub);margin:8px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend b{width:11px;height:11px;border-radius:3px;display:inline-block}
+.hm{width:100%;display:block}
+.hm .c0{fill:var(--c0)}.hm .c1{fill:var(--c1)}.hm .c2{fill:var(--c2)}.hm .c3{fill:var(--c3)}.hm .c4{fill:var(--c4)}.hm .c5{fill:var(--c5)}.hm .cm{fill:var(--cm)}
+.hmwrap{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start}
+.hmlabels{display:flex;flex-direction:column;font-size:11px;color:var(--sub)}
+.hmlabels div{height:14px;line-height:14px;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--sub);font-weight:700;padding:4px 6px 6px 0}
+td{padding:6px 6px 6px 0;border-top:1px solid var(--rule);vertical-align:top}
+td.r,th.r{text-align:right}
+.tag{font-size:11px;font-weight:700;border-radius:99px;padding:1px 8px;background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn);white-space:nowrap}
+.sm{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.sm .card{padding:10px 12px}
+.sm .nm{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sm svg{width:100%;height:56px;display:block;margin-top:4px}
+.sm .pk{font-size:11px;color:var(--sub)}
+.wd{stroke:var(--accent);fill:none;stroke-width:1.8}.we{stroke:var(--accent2);fill:none;stroke-width:1.4;stroke-dasharray:3 2}
+.base{stroke:var(--rule);stroke-width:1}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.chip{font-size:11px;background:var(--cm);border-radius:99px;padding:1px 8px;color:var(--sub);white-space:nowrap}
+.err{padding:18px;border:1px dashed var(--warn);border-radius:12px;color:var(--ink)}
+.bars{display:block;width:100%;height:70px}
+.bars rect{fill:var(--bar)}
+footer{margin-top:40px;color:var(--sub);font-size:12px}
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.tile{border-radius:12px;padding:10px 12px;color:#fff;min-height:64px;display:flex;flex-direction:column;justify-content:space-between}
+.tile .tn{font-weight:800;font-size:14px;line-height:1.2}.tile .ts{font-size:12px;opacity:.95}
+.tile.k0{background:var(--c0)}.tile.k1{background:var(--c1);color:#1b1b1b}.tile.k2{background:var(--c2);color:#1b1b1b}.tile.k3{background:var(--c3)}.tile.k4{background:var(--c4)}.tile.k5{background:var(--c5)}.tile.kn{background:var(--cm);color:var(--ink)}
+.obs{display:grid;grid-template-columns:1fr;gap:10px}
+.ob{border-left:6px solid var(--c5)}.ob.good{border-left-color:var(--ok)}.ob.warn{border-left-color:var(--c1)}.ob.bad{border-left-color:var(--c4)}
+.ob .v{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.05}.ob .lb{font-size:12px;color:var(--sub);margin:2px 0 6px}.ob p{margin:0;font-size:13px}
+@media (min-width:720px){.obs{grid-template-columns:repeat(3,1fr)}}
+@media (min-width:720px){.kpis{grid-template-columns:repeat(4,1fr)}.cols{grid-template-columns:1fr 1fr}h1{font-size:32px}.wrap{padding:28px 24px 72px}.hmlabels div{height:14px}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div><p class="eyebrow">London Walkabout</p><h1>Data Desk</h1><p class="stamp" id="stamp">Loading&hellip;</p></div><button id="theme" type="button" aria-label="Toggle colour theme">Theme</button></header>
+<nav aria-label="Sections"><a href="#now">Now</a><a href="#observations">Observations</a><a href="#health">Data health</a><a href="#lines">Lines</a><a href="#lifts">Lifts</a><a href="#stations">Stations</a><a href="#crowding">Crowding</a><a href="#arrivals">Arrivals</a></nav>
+<main id="app"><div class="card" style="margin-top:18px">Loading data&hellip;</div></main>
+<footer>Source: TfL Unified API, collected hourly by a scheduled job and stored as plain files in this repository. This page makes no external requests; it only reads <code>summary.json</code> (or <code>summary.js</code> when opened from disk).</footer>
+</div>
+<script>
+(function(){
+"use strict";
+var $=function(s,r){return (r||document).querySelector(s)};
+function el(t,a,k){var e=document.createElement(t);if(a)for(var x in a){if(x==="class")e.className=a[x];else if(x==="html")e.innerHTML=a[x];else e.setAttribute(x,a[x])}
+ (k||[]).forEach(function(c){if(c!=null)e.appendChild(typeof c==="string"?document.createTextNode(c):c)});return e}
+var NS="http://www.w3.org/2000/svg";
+function sv(t,a,k){var e=document.createElementNS(NS,t);if(a)for(var x in a)e.setAttribute(x,a[x]);(k||[]).forEach(function(c){e.appendChild(c)});return e}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function fmtSlot(s){if(!s)return"-";var d=new Date(s);return d.toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"})+" UK"}
+function fmtDay(s){var d=new Date(s+"T12:00:00Z");return d.toLocaleDateString("en-GB",{day:"numeric",month:"short",timeZone:"UTC"})}
+function hrs(n){return n>=48?(Math.round(n/24*10)/10+" days"):(n+" h")}
+function num(n){return n==null?"-":n.toLocaleString("en-GB")}
+function pct(n){return n==null?"-":n.toFixed(1)+"%"}
+function bar(label,frac,val,opts){opts=opts||{};var f=Math.max(0,Math.min(1,frac||0));
+ var tr=el("div",{class:"track"},[el("div",{class:"fill",style:"width:"+(f*100)+"%"+(opts.color?";background:"+opts.color:"")})]);
+ if(opts.mark!=null)tr.appendChild(el("div",{class:"mark",style:"left:calc("+Math.max(0,Math.min(1,opts.mark))*100+"% - 1px)",title:opts.markTitle||""}));
+ return el("div",{class:"row"},[el("div",{class:"lbl",title:label},[label]),tr,el("div",{class:"val"},[val])])}
+function card(title,kids,cls){return el("div",{class:"card"+(cls?" "+cls:"")},[title?el("h3",null,[title]):null].concat(kids))}
+function sec(id,title,lede,kids){return el("section",{id:id},[el("h2",null,[title]),el("p",{class:"lede"},[lede])].concat(kids))}
+var DS_LABEL={lineStatus:"Line status",liftDisruptions:"Lift outages",stopDisruptions:"Station disruptions",crowdingReadings:"Crowding",arrivalsReadings:"Arrivals"};
+var CATS=["Good service","Minor delays","Reduced / special","Part closure / planned","Severe / suspended","Service closed"];
+
+function health(S){
+ var C=S.coverage,kids=[],ds=Object.keys(DS_LABEL).filter(function(k){return C[k]});
+ var cards=ds.map(function(k){var c=C[k];
+  var note=k==="crowdingReadings"||k==="arrivalsReadings"?" ("+pct(c.pctExclClosureHours)+" excluding the night hours the old collector skipped)":"";
+  return el("div",{class:"card"},[el("h3",null,[DS_LABEL[k]]),bar(c.captured+" / "+c.expected+" h",c.pct/100,pct(c.pct)),
+   el("div",{class:"small"},["From "+fmtSlot(c.first)+" to "+fmtSlot(c.last)+". "+c.missing+" hours missing"+note+"."])])});
+ kids.push(el("div",{class:"grid cols"},cards));
+ var cal=el("div",{class:"card",style:"margin-top:12px"},[el("h3",null,["Captures per day (24 = every hour)"])]);
+ var inc=S.incident||{},ia=(inc.from||"").slice(0,10),ib=(inc.to||"").slice(0,10);
+ ds.forEach(function(k){var pd=C[k].perDay,days=Object.keys(pd),first=days[0],last=days[days.length-1],g=el("div",{class:"cal"}),all=[];
+  var d=new Date(first+"T00:00:00Z"),end=new Date(last+"T00:00:00Z");
+  while(d<=end){var key=d.toISOString().slice(0,10),n=pd[key]||0,q=n===0?"":n<8?"l1":n<16?"l2":n<22?"l3":"l4";
+   g.appendChild(el("i",{class:q+(key>=ia&&key<=ib?" inc":""),title:fmtDay(key)+": "+n+"/24"}));d.setUTCDate(d.getUTCDate()+1)}
+  cal.appendChild(el("div",{class:"small"},[DS_LABEL[k]]));cal.appendChild(g)});
+ cal.appendChild(el("div",{class:"legend"},[el("span",null,[el("b",{style:"background:var(--cm)"}),"no readings"]),el("span",null,[el("b",{style:"background:color-mix(in srgb,var(--ok) 25%,var(--cm))"}),"under 8 h"]),el("span",null,[el("b",{style:"background:color-mix(in srgb,var(--ok) 60%,var(--cm))"}),"8–21 h"]),el("span",null,[el("b",{style:"background:var(--ok)"}),"22–24 h"]),el("span",null,[el("b",{style:"outline:2px solid var(--warn);outline-offset:-2px;background:var(--cm)"}),"22–25 Sep outage"])]));
+ kids.push(cal);
+ var gaps=[];ds.forEach(function(k){C[k].gaps.forEach(function(g){gaps.push([k,g])})});
+ var seen={},rows=[];gaps.sort(function(a,b){return b[1][2]-a[1][2]}).forEach(function(x){var key=x[1][0]+x[1][1];if(seen[key]){seen[key].ds.push(DS_LABEL[x[0]]);return}
+  var o={g:x[1],ds:[DS_LABEL[x[0]]]};seen[key]=o;rows.push(o)});
+ var tb=el("table",null,[el("thead",null,[el("tr",null,[el("th",null,["Gap (UK time)"]),el("th",{class:"r"},["Hours"]),el("th",null,["Datasets"])])]),
+  el("tbody",null,rows.slice(0,8).map(function(o){var isInc=o.g[0]>=inc.from&&o.g[0]<=inc.to&&o.g[2]>=60;
+   return el("tr",null,[el("td",null,[fmtSlot(o.g[0]).replace(" UK","")+" → "+fmtSlot(o.g[1]).replace(" UK",""),isInc?el("span",{class:"tag",style:"margin-left:6px"},["22–25 Sep outage"]):null]),el("td",{class:"r"},[String(o.g[2])]),el("td",null,[o.ds.length>=4?"All datasets":o.ds.join(", ")])])}))]);
+ kids.push(card("Longest gaps in the record",[tb,el("div",{class:"small",style:"margin-top:8px"},["Night-hour gaps in Crowding and Arrivals are by design in the old collector; the new one captures every hour."])],"")); kids[kids.length-1].style.marginTop="12px";
+ return sec("health","Data health","How complete the record is, by dataset and by day.",kids)}
+
+function lines(S){
+ var L=S.lines,kids=[],list=L.list;
+ var c=el("div",{class:"card"},[el("h3",null,["Good service share (marker = last 7 days)"])]);
+ list.forEach(function(l){c.appendChild(bar(l.name,(l.goodPct||0)/100,pct(l.goodPct),{mark:l.good7dPct==null?null:l.good7dPct/100,markTitle:"Last 7 days: "+pct(l.good7dPct),color:l.goodPct<60?"var(--c4)":l.goodPct<85?"var(--c1)":"var(--c0)"}))});
+ c.appendChild(el("div",{class:"small",style:"margin-top:8px"},["Share of hours with good service while the line was open. Black marker shows the same measure for the last 7 days."]));
+ kids.push(c);
+ var rows=Object.keys(L.matrix.rows),hh=14,w=168,svg=sv("svg",{class:"hm",viewBox:"0 0 "+w+" "+(rows.length*hh),preserveAspectRatio:"none",style:"height:"+(rows.length*hh)+"px",role:"img","aria-label":"Line status heatmap for the last 168 hours"});
+ var order=list.map(function(l){return l.id}).filter(function(i){return L.matrix.rows[i]});
+ order.forEach(function(id,r){var s=L.matrix.rows[id];for(var i=0;i<w;i++){var ch=s.charAt(i);svg.appendChild(sv("rect",{x:i,y:r*hh+1,width:1.02,height:hh-2,class:ch==="-"?"cm":"c"+ch}))}});
+ var lab=el("div",{class:"hmlabels"},order.map(function(id){var n=list.filter(function(l){return l.id===id})[0];return el("div",null,[n?n.name:id])}));
+ var hm=el("div",{class:"card",style:"margin-top:12px"},[el("h3",null,["Last 7 days, hour by hour (left = oldest)"]),el("div",{class:"hmwrap"},[lab,svg])]);
+ var lg=el("div",{class:"legend"},CATS.map(function(n,i){return el("span",null,[el("b",{style:"background:var(--c"+i+")"}),n])}));lg.appendChild(el("span",null,[el("b",{style:"background:var(--cm)"}),"no reading"]));
+ hm.appendChild(lg);kids.push(hm);
+ return sec("lines","Lines","Tube, DLR, Overground, Elizabeth line and river services.",kids)}
+
+function lifts(S){
+ var F=S.lifts,kids=[];if(!F||!F.current)return sec("lifts","Lifts","No lift data yet.",[]);
+ var cur=F.current;
+ var k=el("div",{class:"grid kpis"},[kpi(cur.lifts,"lifts out of service now"),kpi(cur.stations,"stations affected"),kpi(F.topStations[0]?F.topStations[0].name:"-","most hours with a lift out"),kpi(F.longest[0]?hrs(F.longest[0].hours):"-","longest continuous outage")]);
+ kids.push(k);
+ var max=Math.max.apply(null,F.perDay.map(function(d){return d[1]||0}).concat([1])),n=F.perDay.length,bw=100/n;
+ var s=sv("svg",{class:"bars",viewBox:"0 0 100 40",preserveAspectRatio:"none",role:"img","aria-label":"Stations with a lift out of service, daily average"});
+ F.perDay.forEach(function(d,i){var h=(d[1]||0)/max*36;var r=sv("rect",{x:i*bw+bw*.1,y:40-h,width:bw*.8,height:h});r.appendChild(sv("title",null,[document.createTextNode(fmtDay(d[0])+": "+d[1]+" stations"+(d[2]!=null?", "+d[2]+" lifts":""))]));s.appendChild(r)});
+ var trend=card("Stations with a lift out of service, daily average",[s,el("div",{class:"small"},["Peak day average: "+max+" stations. "+fmtDay(F.perDay[0][0])+" to "+fmtDay(F.perDay[n-1][0])+"."])]);trend.style.marginTop="12px";
+ var tops=card("Stations with a lift out for the most hours",F.topStations.slice(0,10).map(function(t){return bar(t.name,t.liftHours/F.topStations[0].liftHours,num(t.liftHours)+" h")}));
+ var long=el("table",null,[el("thead",null,[el("tr",null,[el("th",null,["Lift"]),el("th",{class:"r"},["Out for"]),el("th",null,["Since"])])]),el("tbody",null,F.longest.map(function(x){
+  return el("tr",null,[el("td",null,[x.station,el("div",{class:"small"},[x.lift])]),el("td",{class:"r"},[hrs(x.hours),x.ongoing?el("div",{class:"small"},["ongoing"]):null]),el("td",null,[fmtDay(x.start.slice(0,10))])])}))]);
+ var grid=el("div",{class:"grid cols",style:"margin-top:12px"},[tops,card("Longest continuous outages",[long])]);
+ kids.push(trend);kids.push(grid);
+ return sec("lifts","Lifts","Step-free access: which lifts are out, where, and for how long. A “continuous outage” is a lift reported every reading since its start date, bridging short capture gaps. "+(F.note||""),kids)}
+function kpi(n,l){return el("div",{class:"card kpi"},[el("div",{class:"n"+(String(n).length>9?" t":"")},[String(n)]),el("div",{class:"l"},[l])])}
+
+function stations(S){
+ var T=S.stops;if(!T||!T.current)return sec("stations","Stations","No station disruption data yet.",[]);
+ var kids=[el("div",{class:"grid kpis"},[kpi(T.current.disruptions,"active station notices now"),kpi(T.current.stations,"stations with a notice"),kpi(T.avgActive,"average notices per reading"),kpi(num(T.snapshots),"readings analysed")])];
+ var max=T.topStations[0]?T.topStations[0].slots:1;
+ var tops=card("Stations with a notice in the most readings",T.topStations.slice(0,10).map(function(t){return bar(t.name.replace(/ (Rail|Underground) Station$/,""),t.slots/T.snapshots,num(t.slots))}));
+ var tot=0,ap=T.byAppearance;Object.keys(ap).forEach(function(k){tot+=ap[k]});
+ var cols=["var(--c0)","var(--c1)","var(--c3)","var(--c4)","var(--c5)"];var stack=el("div",{class:"track",style:"height:18px;display:flex"},[]);
+ Object.keys(ap).forEach(function(k,i){stack.appendChild(el("div",{style:"width:"+(ap[k]/tot*100)+"%;background:"+cols[i%5],title:k+": "+ap[k]}))});
+ var split=card("Notice types (share of all notices)",[stack,el("div",{class:"legend"},Object.keys(ap).map(function(k,i){return el("span",null,[el("b",{style:"background:"+cols[i%5]}),k+" "+(ap[k]/tot*100).toFixed(0)+"%"])})),
+  el("h3",{style:"margin-top:14px"},["By mode"]),el("div",{class:"chips"},Object.keys(T.byMode).map(function(m){return el("span",{class:"chip"},[m+" "+(T.byMode[m]/tot*100).toFixed(0)+"%"])}))]);
+ kids.push(el("div",{class:"grid cols",style:"margin-top:12px"},[tops,split]));
+ return sec("stations","Stations","Notices TfL attaches to the 75 watched stations and 23 piers: information, planned work and real-time disruption.",kids)}
+
+function crowding(S){
+ var C=S.crowding;if(!C||!C.stations)return sec("crowding","Crowding","No crowding data yet.",[]);
+ var top=C.top7d,st=C.stations,mx=1;top.forEach(function(k){st[k].wd.concat(st[k].we).forEach(function(v){if(v!=null&&v>mx)mx=v})});
+ var kids=[card("Busiest stations, last 7 days (mean % of normal)",top.map(function(k){return bar(st[k].name,st[k].mean7d/mx,st[k].mean7d+"%")}))];
+ var sm=el("div",{class:"sm"},top.map(function(k){var s=st[k],W=240,H=56;
+  function path(a){var d="",on=false;a.forEach(function(v,i){if(v==null){on=false;return}d+=(on?"L":"M")+(i/23*W).toFixed(1)+" "+(H-4-v/mx*(H-10)).toFixed(1);on=true});return d}
+  var svg=sv("svg",{viewBox:"0 0 "+W+" "+H,preserveAspectRatio:"none",role:"img","aria-label":s.name+" crowding by hour"},[sv("line",{class:"base",x1:0,x2:W,y1:H-4,y2:H-4}),sv("path",{class:"we",d:path(s.we)}),sv("path",{class:"wd",d:path(s.wd)})]);
+  return el("div",{class:"card"},[el("div",{class:"nm",title:s.name},[s.name]),svg,el("div",{class:"pk"},["Peak "+(s.peakHour==null?"-":String(s.peakHour).padStart(2,"0")+":00")+" · "+s.mean7d+"% avg"])])}));
+ var lg=el("div",{class:"legend"},[el("span",null,[el("b",{style:"background:var(--accent)"}),"Weekday"]),el("span",null,[el("b",{style:"background:var(--accent2)"}),"Weekend"]),el("span",null,["Each chart: 00:00 to 23:00 UK time, same scale for all stations"])]);
+ kids.push(el("div",{style:"margin-top:12px"},[sm,lg]));
+ return sec("crowding","Crowding","Live crowding as a share of TfL’s normal level for that station and time. 100% means typical.",kids)}
+
+function arrivals(S){
+ var A=S.arrivals;if(!A||!A.stations)return sec("arrivals","Arrivals","No arrivals data yet.",[]);
+ var st=A.stations;
+ function list(keys,field,fmt){return keys.map(function(k){var s=st[k];var chips=Object.keys(s.perLine).slice(0,4).map(function(l){return el("span",{class:"chip"},[l+" "+Math.round(s.perLine[l]/60*10)/10+" min"])});
+  return el("tr",null,[el("td",null,[s.name,el("div",{class:"chips"},chips)]),el("td",{class:"r"},[fmt(s)])])})}
+ function tbl(head,rows){return el("table",null,[el("thead",null,[el("tr",null,[el("th",null,["Station"]),el("th",{class:"r"},[head])])]),el("tbody",null,rows)])}
+ var a=card("Most trains in the prediction window",[tbl("Trains",list(A.busiest.slice(0,8),"meanPredictions",function(s){return String(s.meanPredictions)}))]);
+ var b=card("Longest average wait for the next train",[tbl("Avg wait",list(A.slowest.slice(0,8),"meanNextSec",function(s){return Math.round(s.meanNextSec/60*10)/10+" min"}))]);
+ return sec("arrivals","Arrivals","How many trains are predicted and how long until the next one, "+(A.window||"")+". Chips show the average wait per line.",[el("div",{class:"grid cols"},[a,b])])}
+
+function nowBoard(S){
+ var N=S.now;if(!N||!N.lines)return sec("now","Now","No line status yet.",[]);
+ var tiles=N.lines.map(function(t){var k=t.cat==null?"n":t.cat;return el("div",{class:"tile k"+k,title:t.reason||t.status||""},[el("div",{class:"tn"},[t.name||t.id]),el("div",{class:"ts"},[t.status||"No status"])])});
+ var lg=el("div",{class:"legend"},CATS.map(function(n,i){return el("span",null,[el("b",{style:"background:var(--c"+i+")"}),n])}));
+ return sec("now","Now","Line status at the latest reading ("+fmtSlot(N.polledAt||N.slot)+"). Hover or long-press a tile for TfL's reason.",[el("div",{class:"board"},tiles),lg])}
+
+function observations(S){
+ var O=S.observations||[];if(!O.length)return sec("observations","Observations","Nothing to report yet.",[]);
+ return sec("observations","Observations","Computed from the record on every run; no AI involved.",[el("div",{class:"obs"},O.map(function(o){
+  return el("div",{class:"card ob "+(o.tone||"neutral")},[el("div",{class:"v"},[o.value]),el("div",{class:"lb"},[o.label]),el("p",null,[o.text])])}))])}
+
+function render(S){
+ var app=$("#app");app.innerHTML="";
+ var M=S.meta||{};
+ $("#stamp").textContent="Data through "+fmtSlot(M.dataThrough)+" · page built "+fmtSlot(M.generatedAt);
+ var recs=0,r=M.records||{};Object.keys(r).forEach(function(k){recs+=r[k].records||0});
+ var cov=S.coverage&&S.coverage.lineStatus;
+ app.appendChild(el("div",{class:"grid kpis"},[kpi(num(recs),"readings stored"),kpi(cov?pct(cov.pct):"-","line-status hours captured"),kpi(S.lifts&&S.lifts.current?S.lifts.current.lifts:"-","lifts out now"),kpi(cov?String(Math.round((new Date(cov.last)-new Date(cov.first))/864e5)):"-","days of history")]));
+ [nowBoard,observations,health,lines,lifts,stations,crowding,arrivals].forEach(function(f){try{app.appendChild(f(S))}catch(e){app.appendChild(el("div",{class:"err"},["Could not draw a section: "+e.message]))}})}
+
+function fail(msg){$("#stamp").textContent="Data unavailable";$("#app").innerHTML="";$("#app").appendChild(el("div",{class:"err",style:"margin-top:18px"},[msg]))}
+function load(){
+ var fb=function(){if(window.__SUMMARY__)render(window.__SUMMARY__);else fail("Could not load summary.json. If you opened this file directly, make sure summary.js sits next to index.html; otherwise run: python3 collector/aggregate.py --data data --out docs")};
+ if(window.__SUMMARY__&&location.protocol==="file:"){render(window.__SUMMARY__);return}
+ if(!window.fetch){fb();return}
+ fetch("summary.json?"+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(render).catch(fb)}
+var root=document.documentElement,btn=$("#theme");
+try{var t=localStorage.getItem("lw-theme");if(t)root.setAttribute("data-theme",t)}catch(e){}
+btn.addEventListener("click",function(){var cur=root.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"),n=cur==="dark"?"light":"dark";root.setAttribute("data-theme",n);try{localStorage.setItem("lw-theme",n)}catch(e){}});
+var s=document.createElement("script");s.src="summary.js";s.onload=load;s.onerror=load;document.head.appendChild(s);
+if(location.protocol!=="file:"&&window.fetch)setInterval(function(){fetch("summary.json?"+Date.now(),{cache:"no-store"}).then(function(r){if(r.ok)return r.json()}).then(function(S){if(S)render(S)}).catch(function(){})},600000);
+})();
+</script>
+</body>
+</html>

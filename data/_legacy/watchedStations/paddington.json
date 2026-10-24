@@ -1,0 +1,11 @@
+{
+  "categories": [
+    "rail-hub",
+    "elizabeth-line"
+  ],
+  "crowdingId": "940GZZLUPAC",
+  "disruptionId": "HUBPAD",
+  "slug": "paddington",
+  "trackArrivals": true,
+  "trackCrowding": true
+}
