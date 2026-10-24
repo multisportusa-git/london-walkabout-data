@@ -73,6 +73,13 @@ td.r,th.r{text-align:right}
 .bars rect{fill:var(--bar)}
 footer{margin-top:40px;color:var(--sub);font-size:12px}
 .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.lb{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+.lt{border:1px solid var(--line,#0002);border-left:8px solid var(--c5);border-radius:12px;padding:10px 12px;background:var(--card,transparent)}
+.lt.red{border-left-color:var(--c4)}.lt.amber{border-left-color:var(--c1)}.lt.green{border-left-color:var(--c0)}
+.lt .h{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.lt .h b{font-size:14px}
+.lt .w{font-weight:800;font-size:15px;white-space:nowrap}.lt .d{font-size:12px;color:var(--sub);margin-top:4px}
+.lt .f{display:inline-block;margin-top:6px;font-size:11px;font-weight:700;border-radius:99px;padding:1px 8px;background:color-mix(in srgb,var(--c4) 16%,transparent);color:var(--c4)}
+.lg{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.lg span{font-size:12px;border-radius:99px;padding:2px 9px;border:1px solid color-mix(in srgb,var(--c0) 45%,transparent)}
 .tile{border-radius:12px;padding:10px 12px;color:#fff;min-height:64px;display:flex;flex-direction:column;justify-content:space-between}
 .tile .tn{font-weight:800;font-size:14px;line-height:1.2}.tile .ts{font-size:12px;opacity:.95}
 .tile.k0{background:var(--c0)}.tile.k1{background:var(--c1);color:#1b1b1b}.tile.k2{background:var(--c2);color:#1b1b1b}.tile.k3{background:var(--c3)}.tile.k4{background:var(--c4)}.tile.k5{background:var(--c5)}.tile.kn{background:var(--cm);color:var(--ink)}
@@ -156,7 +163,17 @@ function lines(S){
 
 function lifts(S){
  var F=S.lifts,kids=[];if(!F||!F.current)return sec("lifts","Lifts","No lift data yet.",[]);
- var cur=F.current;
+ var cur=F.current,B=F.board;
+ if(B&&B.stations){
+  var red=B.stations.filter(function(x){return x.colour!="green"}),grn=B.stations.filter(function(x){return x.colour=="green"});
+  var tiles=red.map(function(x){var since=x.since?(x.since<=B.trackedSince?"since at least "+fmtDay(B.trackedSince.slice(0,10)):"since "+fmtSlot(x.since)):"";
+   return el("div",{class:"lt "+x.colour,title:x.message||""},[el("div",{class:"h"},[el("b",null,[x.name]),el("span",{class:"w"},[(x.total!=null?x.working+" of "+x.total:"?")+" working"])]),
+    el("div",{class:"d"},[x.detail||""]),el("div",{class:"d"},[since]),x.stepFreeLost?el("span",{class:"f"},["TfL: step-free access lost on this route"]):null])});
+  var gl=el("div",{class:"lg"},grn.map(function(x){return el("span",null,[x.name+" "+x.working+"/"+x.total])}));
+  var leg=el("div",{class:"legend"},[el("span",null,[el("b",{style:"background:var(--c4)"}),"no lift working"]),el("span",null,[el("b",{style:"background:var(--c1)"}),"some lifts out, others working"]),el("span",null,[el("b",{style:"background:var(--c0)"}),"all lifts working"])]);
+  kids.push(card("Step-free access now: "+B.counts.red+" red, "+B.counts.amber+" amber, "+B.counts.green+" watched stations green",[leg,el("div",{class:"lb",style:"margin-top:10px"},tiles),grn.length?el("div",{class:"small",style:"margin-top:12px"},["All lifts working at these watched stations:"]):null,gl,
+   el("div",{class:"small",style:"margin-top:8px"},["Working = the station's lifts (TfL station data"+(B.inventoryFrom?", "+fmtSlot(B.inventoryFrom):"")+") minus those TfL reports out. Each lift serves one route, so TfL can report no step-free route to one platform even when other lifts work; that wording is shown on each tile."])]));
+ }
  var k=el("div",{class:"grid kpis"},[kpi(cur.lifts,"lifts out of service now"),kpi(cur.stations,"stations affected"),kpi(F.topStations[0]?F.topStations[0].name:"-","most hours with a lift out"),kpi(F.longest[0]?hrs(F.longest[0].hours):"-","longest continuous outage")]);
  kids.push(k);
  var max=Math.max.apply(null,F.perDay.map(function(d){return d[1]||0}).concat([1])),n=F.perDay.length,bw=100/n;
@@ -168,7 +185,7 @@ function lifts(S){
   return el("tr",null,[el("td",null,[x.station,el("div",{class:"small"},[x.lift])]),el("td",{class:"r"},[hrs(x.hours),x.ongoing?el("div",{class:"small"},["ongoing"]):null]),el("td",null,[fmtDay(x.start.slice(0,10))])])}))]);
  var grid=el("div",{class:"grid cols",style:"margin-top:12px"},[tops,card("Longest continuous outages",[long])]);
  kids.push(trend);kids.push(grid);
- return sec("lifts","Lifts","Step-free access: which lifts are out, where, and for how long. A “continuous outage” is a lift reported every reading since its start date, bridging short capture gaps. "+(F.note||""),kids)}
+ return sec("lifts","Lifts","Step-free access: how many lifts work out of how many each station has, which are out, where, and for how long. A “continuous outage” is a lift reported every reading since its start date, bridging short capture gaps. "+(F.note||""),kids)}
 function kpi(n,l){return el("div",{class:"card kpi"},[el("div",{class:"n"+(String(n).length>9?" t":"")},[String(n)]),el("div",{class:"l"},[l])])}
 
 function stations(S){

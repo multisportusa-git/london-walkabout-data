@@ -66,6 +66,33 @@ class AppendMissingTests(unittest.TestCase):
             self.assertEqual((data / "2026-10-24.ndjson").read_text(), '{"slot":"2026-10-24T18:00:00Z","polledAt":"x"}\n')
 
 
+class LiftBoardTests(unittest.TestCase):
+    def test_stoplight_counts_working_out_of_total(self):
+        import io, zipfile
+        sys.path.insert(0, str(ROOT / "collector")); import aggregate
+        with tempfile.TemporaryDirectory() as tmp:
+            ref = Path(tmp) / "_reference" / "tfl-stationdata"; ref.mkdir(parents=True)
+            b = io.BytesIO()
+            with zipfile.ZipFile(b, "w") as z:
+                z.writestr("Lifts.csv", "StationUniqueId,LiftUniqueId,FromAreas,ToAreas\n"
+                           "ONE,ONE-Lift-1,St,Pl\nFOUR,FOUR-Lift-1,St,P1\nFOUR,FOUR-Lift-2,St,P2\nFOUR,FOUR-Lift-3,St,P3\nFOUR,FOUR-Lift-4,St,P4\n"
+                           "OK,OK-Lift-1,St,Pl\nOK,OK-Lift-2,St,Pl\n")
+                z.writestr("Stations.csv", "UniqueId,Name\nONE,One Lift\nFOUR,Four Lifts\nOK,All Fine\n")
+            (ref / "x.zip").write_bytes(b.getvalue())
+            (Path(tmp) / "stationAccess").mkdir()
+            (Path(tmp) / "stationAccess" / "2026-10-24.ndjson").write_text(
+                json.dumps({"slot": "2026-10-24T03:00:00Z", "polledAt": "x", "file": "_reference/tfl-stationdata/x.zip"}) + "\n")
+            cur = {"disruptions": [
+                {"stationUniqueId": "FOUR", "disruptedLiftUniqueIds": ["FOUR-Lift-2"], "message": "Four Lifts: No Step Free Access - Step free access is not available to platform 2."},
+                {"stationUniqueId": "ONE", "disruptedLiftUniqueIds": ["ONE-Lift-1"], "message": "One Lift: lift out"}]}
+            runs = {"ONE-Lift-1": {"start": "2026-10-24T05:00:00Z", "last": "2026-10-24T09:00:00Z"}}
+            B = aggregate.lift_board(tmp, cur, runs, "2026-10-24T09:00:00Z", lambda s: s, ["OK"])
+            got = [(x["name"], x["colour"], x["working"], x["total"], x["stepFreeLost"]) for x in B["stations"]]
+            self.assertEqual(got, [("One Lift", "red", 0, 1, False), ("Four Lifts", "amber", 3, 4, True), ("All Fine", "green", 2, 2, False)])
+            self.assertEqual(B["stations"][0]["since"], "2026-10-24T05:00:00Z")
+            self.assertEqual(B["counts"], {"red": 1, "amber": 1, "green": 1})
+
+
 class AggregateApiTests(unittest.TestCase):
     def test_api_files_and_observations(self):
         with tempfile.TemporaryDirectory() as tmp:

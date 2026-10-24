@@ -312,6 +312,23 @@ class NationalRailStationsTests(unittest.TestCase):
             self.assertNotIn("KBST", blob)
 
 
+class StationAccessTests(unittest.TestCase):
+    def test_zip_kept_once_per_version_and_daily_record(self):
+        import argparse
+        with tempfile.TemporaryDirectory() as tmp:
+            def go(now):
+                a = argparse.Namespace(out=tmp, registry=str(ROOT / "config" / "registry.json"), now=now, no_sleep=True,
+                                       datasets="stationAccess", dry_run=False, current_only=True)
+                return collect.run(a, fetch=lambda u, t: (200, RunTests.station_zip(), {}), sleep=lambda s: None, clock=lambda: dt(now))
+            self.assertEqual(go("2026-10-24T03:00:05Z"), 0)
+            go("2026-10-24T04:00:05Z")                      # same day: not fetched again
+            go("2026-10-25T03:00:05Z")                      # next day, same content: record, no new file
+            recs = [json.loads(l) for f in sorted((Path(tmp) / "stationAccess").iterdir()) for l in f.read_text().splitlines()]
+            self.assertEqual([(r["slot"][:13], r["changed"], r["lifts"]) for r in recs],
+                             [("2026-10-24T03", True, 2), ("2026-10-25T03", False, 2)])
+            self.assertEqual(len(list((Path(tmp) / "_reference" / "tfl-stationdata").iterdir())), 1)
+
+
 class InvalidKeyTests(unittest.TestCase):
     def test_invalid_key_dropped_and_run_continues_anonymously(self):
         import argparse
@@ -379,7 +396,18 @@ class RunTests(unittest.TestCase):
     def setUp(self):
         os.environ.pop("TFL_APP_KEY", None)
 
+    @staticmethod
+    def station_zip():
+        import io, zipfile
+        b = io.BytesIO()
+        with zipfile.ZipFile(b, "w") as z:
+            z.writestr("Lifts.csv", "StationUniqueId,LiftUniqueId,FromAreas,ToAreas\nS,S-Lift-1,A,B\nS,S-Lift-2,A,B\n")
+            z.writestr("Stations.csv", "UniqueId,Name\nS,Somewhere\n")
+        return b.getvalue()
+
     def fake_fetch(self, url, timeout):
+        if "/stationdata/" in url:
+            return 200, self.station_zip(), {}
         if "Lifts" in url:
             return 200, json.dumps([{"stationUniqueId": "S", "message": "m"}]).encode(), {}
         if "/Line/Mode/" in url:
@@ -414,7 +442,7 @@ class RunTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             self.assertEqual(self.lines(tmp, "nationalRailDepartures"), [])   # no NR_API_KEY: skipped, not a gap
             self.assertEqual(self.lines(tmp, "nationalRailIncidents"), [])
-            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations")]:
+            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations", "stationAccess")]:
                 recs = self.lines(tmp, d)
                 self.assertEqual([r["slot"] for r in recs], ["2026-10-24T16:00:00Z"])
                 self.assertEqual(recs[0]["authMode"], "anonymous-no-key")
@@ -423,12 +451,12 @@ class RunTests(unittest.TestCase):
             health = self.lines(tmp, "_health")
             self.assertEqual(len(health), 1)
             self.assertEqual(health[0]["datasets"]["crowdingReadings"]["status"], "ok")
-            self.assertEqual(health[0]["requests"], 1 + 2 + 5 + 33 + 47 + 1 + 5 + 315)  # arrivals calls shared with arrivalsDetail
+            self.assertEqual(health[0]["requests"], 1 + 2 + 5 + 33 + 47 + 1 + 5 + 315 + 1)  # + daily station data ZIP  # arrivals calls shared with arrivalsDetail
             # backup run: nothing to do, nothing fetched, nothing appended
             rc2 = collect.run(self.args(tmp, now="2026-10-24T16:05:00Z"), fetch=lambda u, t: 1 / 0,
                               sleep=lambda s: None, clock=lambda: dt("2026-10-24T16:05:01Z"))
             self.assertEqual(rc2, 0)
-            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations")] + ["_health"]:
+            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations", "stationAccess")] + ["_health"]:
                 self.assertEqual(len(self.lines(tmp, d)), 1, d)
 
     def test_backup_fills_only_missing_dataset(self):
@@ -437,7 +465,7 @@ class RunTests(unittest.TestCase):
                         sleep=lambda s: None, clock=lambda: dt("2026-10-24T16:00:01Z"))
             collect.run(self.args(tmp, now="2026-10-24T16:05:00Z"), fetch=self.fake_fetch,
                         sleep=lambda s: None, clock=lambda: dt("2026-10-24T16:05:01Z"))
-            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations")]:
+            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations", "stationAccess")]:
                 self.assertEqual(len(self.lines(tmp, d)), 1, d)
 
     def test_late_backup_fills_missed_hour_then_next_hour(self):
@@ -447,7 +475,7 @@ class RunTests(unittest.TestCase):
             rc = collect.run(self.args(tmp, now="2026-10-24T15:35:00Z", no_sleep=False), fetch=self.fake_fetch,
                              sleep=sleeps.append, clock=lambda: dt("2026-10-24T15:35:00Z"))
             self.assertEqual(rc, 0)
-            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations")]:
+            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations", "stationAccess")]:
                 self.assertEqual([r["slot"] for r in self.lines(tmp, d)],
                                  ["2026-10-24T15:00:00Z", "2026-10-24T16:00:00Z"], d)
             self.assertIn(1500.0, sleeps)  # waited until 16:00:00, never polled early

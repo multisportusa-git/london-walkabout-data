@@ -181,6 +181,13 @@ def now_and_observations(D, S, last_global, cutoff7, data_dir="data"):
                                          f" That is below the 7-day average of {avg7:.1f}." if cur_st < avg7 - 0.5 else f" In line with the 7-day average of {avg7:.1f}.")
         obs.append(dict(key="lifts", tone="warn" if avg7 is not None and cur_st > avg7 + 0.5 else "neutral", value=str(F["current"]["lifts"]),
                         label="lifts out of service now", text=f"{F['current']['lifts']} lifts out at {cur_st} stations.{trend}"))
+        B = F.get("board") or {}
+        if B.get("counts"):
+            reds = [x["name"] for x in B["stations"] if x["colour"] == "red"]
+            obs.append(dict(key="liftStoplight", tone="bad" if reds else ("warn" if B["counts"]["amber"] else "good"),
+                            value=f"{B['counts']['red']} red", label="stations with no lift working",
+                            text=(("No lift working at " + ", ".join(reds[:6]) + ". ") if reds else "") +
+                                 f"{B['counts']['amber']} more stations have some lifts out but others working."))
         ongoing = [x for x in F.get("longest") or [] if x.get("ongoing")]
         if ongoing:
             x = ongoing[0]; days = x["hours"] / 24
@@ -207,6 +214,71 @@ def now_and_observations(D, S, last_global, cutoff7, data_dir="data"):
                     text="All five datasets recorded every hour in the last day." if worst == 24 else
                     "Missing hours in the last day: " + ", ".join(f"{ds} {24 - n}" for ds, n in cov24.items() if n < 24) + "."))
     return now_board, obs
+
+NO_SFA = re.compile(r"no step[- ]free access|step[- ]free access is not available|not step[- ]free", re.I)
+
+
+def lift_inventory(data_dir):
+    """{station id: {"name":..., "lifts": {lift id: (endpoint set)}}} from the newest stored TfL station data ZIP."""
+    import zipfile, io, csv
+    rec = latest_record(data_dir, "stationAccess")
+    if not rec or not rec.get("file"): return None, None
+    path = os.path.join(data_dir, rec["file"])
+    try:
+        z = zipfile.ZipFile(path)
+        inv = collections.defaultdict(lambda: {"name": None, "lifts": {}})
+        for r in csv.DictReader(io.TextIOWrapper(z.open("Lifts.csv"), encoding="utf-8-sig")):
+            ends = set(x for x in ((r.get("FromAreas") or "") + "|" + (r.get("ToAreas") or "")).split("|") if x)
+            inv[r["StationUniqueId"]]["lifts"][r["LiftUniqueId"]] = ends
+        for r in csv.DictReader(io.TextIOWrapper(z.open("Stations.csv"), encoding="utf-8-sig")):
+            inv[r["UniqueId"]]["name"] = r.get("Name")   # stations with no lifts appear with 0 lifts
+        return dict(inv), rec.get("slot")
+    except Exception:
+        return None, None
+
+
+def lift_board(data_dir, cur_record, runs, slot_now, names, watched):
+    """Stoplight per station, judged against how many lifts the station has (TfL station data):
+    red = no lift working; amber = some lifts out, at least one still working; green = all working.
+    TfL's own verdict ("no step-free access ...") is kept as a flag with its wording."""
+    inv, inv_slot = lift_inventory(data_dir)
+    agg = collections.OrderedDict()
+    for e in (cur_record or {}).get("disruptions", []) or []:          # TfL may list one station several times
+        st = e.get("stationUniqueId")
+        if not st: continue
+        g = agg.setdefault(st, {"down": set(), "msgs": []})
+        g["down"] |= set(e.get("disruptedLiftUniqueIds") or [])
+        m = (e.get("message") or "").strip()
+        if m and m not in g["msgs"]: g["msgs"].append(m)
+    out, names_done = [], set()
+    for st, g in agg.items():
+        down = g["down"]; known = (inv or {}).get(st, {}).get("lifts", {})
+        total = len(set(known) | down) if inv is not None else None
+        working = (total - len(down)) if total is not None else None
+        msg = " | ".join(g["msgs"])
+        lost = bool(NO_SFA.search(msg))
+        detail = []
+        for m in g["msgs"]:
+            parts = re.split(r"\s*-\s+|:\s+", m, maxsplit=2)
+            t = parts[-1] if len(parts) > 1 else m
+            detail.append(re.sub(r"\s*Call (us on )?0343 222 1234.*$", "", t).strip())
+        colour = "red" if working == 0 else "amber"
+        since = min((runs[l]["start"] for l in down if l in runs and runs[l]["last"] == slot_now), default=None)
+        nm = ((inv or {}).get(st, {}).get("name")) or names(st)
+        names_done.add(nm)
+        out.append(dict(id=st, name=nm, colour=colour, working=working, total=total, down=len(down),
+                        stepFreeLost=lost, since=since, detail=" / ".join(d for d in detail if d)[:240], message=msg[:400]))
+    for st in watched:
+        if inv is None or st not in inv: continue
+        n = len(inv[st]["lifts"]); nm = inv[st]["name"] or names(st)
+        if n and nm not in names_done:
+            names_done.add(nm)
+            out.append(dict(id=st, name=nm, colour="green", working=n, total=n, down=0, stepFreeLost=False, since=None, detail="", message=""))
+    order = {"red": 0, "amber": 1, "green": 2}
+    out.sort(key=lambda x: (order[x["colour"]], -(x["down"] / x["total"]) if x["total"] else 0, x["name"] or ""))
+    return dict(slot=slot_now, inventoryFrom=inv_slot, stations=out, trackedSince="2026-09-30T09:00:00Z",
+                counts={c: sum(1 for x in out if x["colour"] == c) for c in ("red", "amber", "green")})
+
 
 def write_api(out_dir, data_dir, D, S, now):
     """Stable, versioned JSON feed for apps (e.g. London Commuter v3). Additive changes only within v1."""
@@ -355,6 +427,16 @@ def main():
                      note="Readings before 30 Sep name only the station; per-lift tracking starts 30 Sep 2026.",
                      topStations=[dict(id=s, name=nm(s), liftHours=n) for s, n in st_hours.most_common(15)],
                      longest=[dict(lift=l, station=nm(x["st"]), start=x["start"], last=x["last"], hours=x["n"], ongoing=(x["last"] == slots[-1])) for l, x in longest])
+        watched = []
+        for f in glob.glob(os.path.join(a.data, "_legacy", "watchedStations", "*.json")):
+            try:
+                w = json.load(open(f, encoding="utf-8"))
+                watched += [w[k] for k in ("disruptionId", "crowdingId") if w.get(k)]
+            except Exception: pass
+        try:
+            lifts["board"] = lift_board(a.data, cur_last, runs, slots[-1], nm, watched)
+        except Exception as ex:
+            lifts["board"] = dict(error=type(ex).__name__)
     S["lifts"] = lifts
 
     # ---- stop disruptions ----

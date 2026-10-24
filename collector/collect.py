@@ -44,10 +44,13 @@ except Exception:  # pragma: no cover - tzdata missing
 API = "https://api.tfl.gov.uk"
 DATASETS = ["liftDisruptions", "lineStatus", "stopDisruptions", "crowdingReadings", "arrivalsReadings", "arrivalsDetail",
             "busLineStatus", "networkDisruptions", "crowdingNetwork", "nationalRailDepartures", "nationalRailIncidents",
-            "nationalRailStations"]
+            "nationalRailStations", "stationAccess"]
 # nationalRailStations: the whole Knowledgebase stations feed (~2,600 stations, ~55 MB), once a day; each
 # day stores a short fingerprint of every station and the full entry only for stations that changed.
-DAILY_AT_UTC = {"nationalRailStations": 3}   # collected once per UTC day, at the first run from this hour
+DAILY_AT_UTC = {"nationalRailStations": 3, "stationAccess": 3}
+# stationAccess: TfL's station accessibility data (every lift at every station, which areas it links,
+# platforms, step-free paths, toilets): the ZIP is kept whole in data/_reference/tfl-stationdata/ each
+# time its content changes, so a lift outage can be judged against how many lifts the station has.   # collected once per UTC day, at the first run from this hour
 # busLineStatus: all ~675 bus routes in one call; good-service routes are counted, the rest stored in full detail.
 # networkDisruptions: every stop/station notice network-wide (rail, bus, National Rail) + bus and National Rail line disruptions.
 # crowdingNetwork: live crowding at every tube and Elizabeth line station (~315 calls; runs last).
@@ -388,6 +391,42 @@ def collect_nr_stations(c, ctx):
     return rec, "ok", len(index), f"{len(index)} stations, {len(changed)} new or changed, {len(removed)} removed"
 
 
+STATIONDATA_PATH = "/stationdata/tfl-stationdata-detailed.zip"
+
+
+def collect_station_access(c, ctx):
+    import hashlib, io, zipfile, csv
+    status, body = None, b""
+    for attempt in range(3):
+        try:
+            c.requests += 1
+            status, body, _ = c.fetch(c._url(STATIONDATA_PATH), 60)
+        except Exception as e:
+            log(f"  ! stationAccess -> {type(e).__name__}: {redact(e, c.key)}")
+        if status == 200 and body[:2] == b"PK":
+            break
+        time.sleep(0 if ctx.get("no_sleep") else 3.0)
+    if status != 200 or body[:2] != b"PK":
+        return None, "failed", 0, f"HTTP {status}"
+    sha = hashlib.sha256(body).hexdigest()
+    try:
+        z = zipfile.ZipFile(io.BytesIO(body))
+        files = {i.filename: i.file_size for i in z.infolist()}
+        lifts = list(csv.DictReader(io.TextIOWrapper(z.open("Lifts.csv"), encoding="utf-8-sig")))
+        stations = list(csv.DictReader(io.TextIOWrapper(z.open("Stations.csv"), encoding="utf-8-sig")))
+    except Exception as e:
+        return None, "failed", 0, f"not a readable ZIP ({type(e).__name__})"
+    ref = Path(ctx["out"]) / "_reference" / "tfl-stationdata"
+    fname = f"{sha[:16]}.zip"
+    changed = not (ref / fname).exists()
+    if changed:  # content-addressed: a new file only when TfL changes the data; nothing is ever replaced
+        ref.mkdir(parents=True, exist_ok=True)
+        (ref / fname).write_bytes(body)
+    rec = {"source": "https://api.tfl.gov.uk" + STATIONDATA_PATH, "sha256": sha, "file": f"_reference/tfl-stationdata/{fname}",
+           "changed": changed, "files": files, "lifts": len(lifts), "stations": len(stations)}
+    return rec, "ok", len(lifts), f"{len(lifts)} lifts at {len(stations)} stations, {'new version stored' if changed else 'unchanged'}"
+
+
 def compact_service(sv):
     row = []
     for f in NR_SERVICE_FIELDS:
@@ -709,6 +748,7 @@ COLLECTORS = {
     "nationalRailDepartures": collect_national_rail,
     "nationalRailIncidents": collect_nr_incidents,
     "nationalRailStations": collect_nr_stations,
+    "stationAccess": collect_station_access,
 }
 
 
@@ -886,7 +926,7 @@ def run(args, fetch=default_fetch, sleep=time.sleep, clock=utcnow, nr_fetch=nr_d
                      "crowdingNetwork": len(base_ctx["crowdingNetworkIds"]),
                      "nationalRailDepartures": len(base_ctx["nrStations"]) if nr_key else 0,
                      "nationalRailIncidents": 1 if kb_inc_key else 0,
-                     "nationalRailStations": 1 if kb_st_key else 0}
+                     "nationalRailStations": 1 if kb_st_key else 0, "stationAccess": 1}
             if "arrivalsDetail" in todo and "arrivalsReadings" not in todo:
                 calls["arrivalsDetail"] = calls["arrivalsReadings"]
             log(f"dry-run: would make ~{sum(calls[d] for d in todo)} requests; nothing fetched or written")
