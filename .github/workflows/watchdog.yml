@@ -1,7 +1,8 @@
 name: watchdog
 
-# Daily gap check. Opens (or comments on) a single 'collector-gap' issue when
-# more than 2 hourly slots are missing for any dataset in the last 48 h.
+# Daily checks (07:15 UTC by GitHub's schedule, and started by the 07:00 collect run because GitHub's
+# schedule is unreliable): opens or comments on a 'collector-gap' issue when more than 2 hourly slots are
+# missing in the last 48 h, and a 'trigger-check' issue when the external hourly trigger or its token fails.
 on:
   schedule:
     - cron: '15 7 * * *'
@@ -26,6 +27,26 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/collect.yml/enable" && echo "collect.yml enabled"
+      # The hourly start comes from Google Cloud Scheduler (workflow_dispatch with a GitHub token). If that token
+      # expires or is revoked, or the jobs stop, no dispatch runs appear: raise an issue (GitHub emails the owner).
+      - name: Check the external hourly trigger and its token
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          since=$(date -u -d '-26 hours' +%Y-%m-%dT%H:%M:%SZ)
+          n=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/collect.yml/runs?event=workflow_dispatch&created=>${since}&per_page=100" --jq '.total_count')
+          exp=$(python3 -c "import json;print(json.load(open('config/dispatch.json')).get('tokenExpires') or '')")
+          msg=""
+          if [ "${n:-0}" -lt 12 ]; then
+            msg="Only ${n:-0} externally triggered collect runs in the last 26 hours (expected about 48). The Google Cloud Scheduler jobs or the GitHub token behind them may have stopped working. Check: Cloud Scheduler jobs lw-collect-hourly / lw-collect-backup in project london-commuter-broker (europe-west2). If GitHub refuses the token: make a new fine-grained token (this repo only, Actions read and write) and run tools/lw-fix-dispatch.sh (see SETUP.md). GitHub's own schedule keeps collecting meanwhile, but it is unreliable."
+          fi
+          if [ -n "$exp" ] && [ "$(date -u -d "$exp -7 days" +%s)" -le "$(date -u +%s)" ]; then
+            msg="${msg} The dispatch token expires on ${exp}. Make a new one now and run tools/lw-fix-dispatch.sh (see SETUP.md), then update config/dispatch.json."
+          fi
+          if [ -z "$msg" ]; then echo "external trigger ok: $n dispatch runs in 26 h; token expiry: ${exp:-none}"; exit 0; fi
+          gh label create trigger-check --color FBCA04 --description "Hourly trigger needs attention" 2>/dev/null || true
+          k=$(gh issue list --label trigger-check --state open --json number -q '.[0].number')
+          if [ -n "$k" ]; then gh issue comment "$k" --body "$msg"; else gh issue create --title "Hourly trigger needs attention" --label trigger-check --body "$msg"; fi
       - name: Verify hourly coverage
         run: python collector/verify.py --data data --hours 48 --issue-file issue.md
       - name: Open or update gap issue

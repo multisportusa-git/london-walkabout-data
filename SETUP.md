@@ -6,7 +6,7 @@ What you get: twelve datasets covering every TfL mode (tube, DLR, Overground, El
 
 Keep the old Claude scheduled task running until step 9. Nothing in the old database is ever deleted.
 
-You need: a GitHub account, Terminal on your Mac, an email address for TfL and cron-job.org sign-ups.
+You need: a GitHub account, Terminal on your Mac with `gh` and `gcloud` signed in.
 
 ---
 
@@ -14,7 +14,7 @@ You need: a GitHub account, Terminal on your Mac, an email address for TfL and c
 - **Never send a key to Claude, by chat, email, a file or the project.** Keys stay in Google Secret Manager (`london-commuter-broker`); the workflow reads them at run time through keyless sign-in (step 5) and GitHub masks them in logs. Claude never needs to see them.
 - The collector puts the TfL key only into the request it sends. It never writes the key to data, health lines, logs or the dashboard (tested: a planted key was searched for in every output, compressed files included, and not found).
 - A wrong key does not lose data: TfL refuses it, the collector drops it, carries on anonymously and turns the run red ("TfL rejected TFL_APP_KEY") so you get an email.
-- The only credential stored outside GitHub is the token in step 6. It goes in cron-job.org's request header. It can do one thing: start this repo's workflows (Actions read/write on this repo only, nothing else). If it ever leaks, revoke it in GitHub and make a new one.
+- The only extra credential is the dispatch token in step 6. It lives in your Secret Manager and your Cloud Scheduler jobs, and it can do one thing: start this repo's workflows (Actions read/write on this repo only). If it ever leaks, revoke it in GitHub and follow step 6, *Replacing the token*.
 - National Rail: `rail-data-api-key` (departure boards) and `rail-kb-incidents-key` (incidents feed, checked working 24 Oct: 928 incidents) and `rail-kb-stations-key` (stations feed, daily, checked working 24 Oct: 2,614 stations) are read the same way, as `NR_API_KEY`, `NR_KB_INCIDENTS_KEY` and `NR_KB_STATIONS_KEY`.
 - The repo is public, so its Actions logs are public: keys are masked there and never printed by the collector.
 
@@ -25,7 +25,7 @@ unzip london-walkabout.zip
 cd london-walkabout
 python3 -m unittest discover -s tests
 ```
-Expect `Ran 44 tests` and `OK`. If not, stop and send me the output.
+Expect `Ran 49 tests` and `OK`. If not, stop and send me the output.
 
 ## 2. Create the public repo and push (5 min)
 With the GitHub CLI (`gh auth status` shows you logged in):
@@ -76,31 +76,28 @@ Both are already stored (24 Oct). For a future key, copy it, then:
 `printf '%s' "$(pbpaste)" | gcloud secrets create <name> --data-file=- --project=london-commuter-broker`
 Then re-run `bash tools/setup-gcp-keyless.sh` to grant read access. Until a key exists, that dataset is simply not collected (no gap, no failure).
 
-## 6. Exact on-the-hour trigger (10 min)
-GitHub's own schedule (runs at :50 and :05) is best-effort. This adds an exact HH:00 start; the GitHub schedule stays on as the backup. Duplicate starts are harmless (each hour is written once).
+## 6. On-the-hour trigger: Google Cloud Scheduler (in place since 25 Oct 2026)
+GitHub's own `schedule` is best-effort and, on this new repo, did not fire at all for its first ~2 hours (a widely reported GitHub problem). So the hourly start comes from **Google Cloud Scheduler** in your project `london-commuter-broker` (region `europe-west2`, free tier: up to 3 jobs):
 
-**6a. Token that can only start this workflow**
-GitHub → your avatar → **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**
-- Name: `london-walkabout-hourly`
-- Expiration: the longest offered (put a calendar reminder a week before it expires)
-- Repository access: **Only select repositories** → `london-walkabout`
-- Permissions → Repository permissions → **Actions: Read and write** (nothing else)
-- Generate, copy the token (`github_pat_…`).
+| Job | When (UTC) | What it does |
+|---|---|---|
+| `lw-collect-hourly` | `0 * * * *` (every HH:00) | POSTs `{"ref":"main"}` to this repo's `collect.yml` workflow_dispatch API |
+| `lw-collect-backup` | `20 * * * *` | the same, 20 minutes later; does nothing if the hour is already stored |
 
-**6b. cron-job.org job** (free): sign up at <https://console.cron-job.org>, then **Create cronjob**
-- Title: `London Walkabout hourly`
-- URL: `https://api.github.com/repos/multisportusa-git/london-walkabout-data/actions/workflows/collect.yml/dispatches`
-- Execution schedule: **Custom** → minutes `0`, every hour, every day; time zone **UTC**
-- **Advanced** tab:
-  - Request method: **POST**
-  - Headers:
-    - `Authorization` = `Bearer github_pat_…` (your token)
-    - `Accept` = `application/vnd.github+json`
-    - `X-GitHub-Api-Version` = `2026-03-10`
-    - `Content-Type` = `application/json`
-  - Request body: `{"ref":"main"}`
-- **Notifications**: tick "execution of the cronjob fails".
-- Save, then use **Test run**. Expect HTTP **200** or **204**, and a new `collect` run in your Actions tab within a minute.
+GitHub's own schedule (:50, :08, :23) stays on as a third starter. Duplicate starts are harmless: every hour is written once.
+
+The jobs authenticate with a **fine-grained GitHub token** (`london-walkabout-dispatch`: this repo only, Actions read and write, nothing else). It is stored in Secret Manager as `lw-dispatch-token` and in the two jobs' Authorization header; it is never printed. On 25 Oct 2026 GitHub reported no expiry date for it (`config/dispatch.json`).
+
+**Health check:** every day (07:00 UTC run) the watchdog counts externally started runs in the last 26 hours. Fewer than 12 opens an issue labelled `trigger-check` (GitHub emails you). If you ever give the token an expiry date, put it in `config/dispatch.json` and the same check opens the issue 7 days before.
+
+**Replacing the token** (expired, revoked or leaked):
+1. In Terminal run `bash tools/lw-fix-dispatch.sh` (from the repo folder). It waits at a hidden prompt.
+2. In GitHub open <https://github.com/settings/personal-access-tokens/new>: name `london-walkabout-dispatch`, longest expiry, resource owner `multisportusa-git`, **Only select repositories** → `london-walkabout-data`, **Repository permissions → Actions: Read and write**. Generate, copy.
+3. Paste at the prompt, press Enter. The script checks the token with GitHub first, then updates Secret Manager and both jobs, and sends a test run. Revoke the old token in GitHub.
+
+**Recreating the jobs from scratch** (only if they were deleted): store a token with `printf '%s' "$(pbpaste)" | gcloud secrets create lw-dispatch-token --data-file=- --project=london-commuter-broker` (copy the token, nothing else, right before), then for each job `gcloud scheduler jobs create http <name> --project=london-commuter-broker --location=europe-west2 --schedule="<cron>" --time-zone=Etc/UTC --uri="https://api.github.com/repos/multisportusa-git/london-walkabout-data/actions/workflows/collect.yml/dispatches" --http-method=POST --headers="Authorization=Bearer <token>,Accept=application/vnd.github+json,X-GitHub-Api-Version=2026-03-10,Content-Type=application/json" --message-body='{"ref":"main"}' --attempt-deadline=60s --max-retry-attempts=3 --min-backoff=30s`.
+
+*(cron-job.org, described here before 25 Oct, is no longer needed.)*
 
 ## 7. Tell me the repo URL
 I check, without any token: today's data lines, `_health` showing all datasets ok (12 with all National Rail keys; stations once a day) and 0 HTTP 429s, the dashboard and app feed loading, `verify.py` clean, and one hour compared against the old database.
@@ -133,6 +130,6 @@ Target 250K/day is met as soon as the old task is off, with no recurring AI job 
 
 ## If something goes wrong
 - **Red `collect` run or GitHub email**: open the run; `data/_health/<today>.ndjson` shows which dataset failed and why. The hour's other data is still committed.
-- **cron-job.org failure email**: usually an expired token (repeat 6a, update the header). The GitHub schedule keeps collecting meanwhile.
+- **`trigger-check` issue**: the Cloud Scheduler start has stopped (usually the token): follow step 6, *Replacing the token*. GitHub's schedule keeps trying meanwhile.
 - **Gap issue opened by the watchdog**: more than 2 hours missing in 48 h; check the Actions tab for that time.
 - **Never** run `tools/backfill_from_export.py` without `--append-missing` on this repo; it refuses anyway once live data exists.

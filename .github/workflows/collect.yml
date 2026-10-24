@@ -15,6 +15,7 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  actions: write   # lets the 07:00 run start the daily watchdog
 
 concurrency:
   group: collect
@@ -111,6 +112,13 @@ jobs:
           done
           echo "::error::push failed after 5 attempts"
           exit 1
+      - name: Start the daily watchdog (07:00 UTC run)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "$(date -u +%H)" = "07" ]; then gh workflow run watchdog.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" && echo "watchdog started"; else echo "not 07 UTC"; fi
       - name: Build dashboard summaries
         if: steps.commit.outputs.changed == 'true'
         run: python collector/aggregate.py --data data --out docs

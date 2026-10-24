@@ -1,0 +1,7 @@
+{
+  "about": "External hourly trigger: Google Cloud Scheduler (project london-commuter-broker, region europe-west2) jobs lw-collect-hourly (HH:00) and lw-collect-backup (HH:20) call this repo's workflow_dispatch with a fine-grained GitHub token stored in Secret Manager as lw-dispatch-token.",
+  "tokenName": "london-walkabout-dispatch",
+  "tokenExpires": null,
+  "tokenCheckedOn": "2026-10-25",
+  "tokenNote": "GitHub returned no token-expiration header on 25 Oct 2026, so this token has no expiry date. If you replace it with one that expires, put the date here (YYYY-MM-DD) and the watchdog opens an issue 7 days before."
+}
