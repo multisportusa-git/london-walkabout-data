@@ -280,6 +280,74 @@ def lift_board(data_dir, cur_record, runs, slot_now, names, watched):
                 counts={c: sum(1 for x in out if x["colour"] == c) for c in ("red", "amber", "green")})
 
 
+def crowding_network_detail(data_dir, names):
+    """All tube/Elizabeth stations from crowdingNetwork: latest %, mean by hour of day (UK), last 48 h."""
+    import gzip
+    files = sorted(glob.glob(os.path.join(data_dir, "crowdingNetwork", "*.ndjson*")))
+    if not files: return None
+    acc, last_slot = {}, None
+    for f in files:
+        try:
+            fh = gzip.open(f, "rt", encoding="utf-8") if f.endswith(".gz") else open(f, encoding="utf-8")
+            for line in fh:
+                if not line.strip(): continue
+                try: r = json.loads(line)
+                except ValueError: continue
+                slot = r.get("slot"); t = pts(slot).astimezone(LON)
+                last_slot = max(last_slot or slot, slot)
+                for sid, v in (r.get("stations") or {}).items():
+                    if not isinstance(v, dict) or not v.get("dataAvailable"): continue
+                    p_ = v.get("percentageOfBaseline")
+                    if not isinstance(p_, (int, float)): continue
+                    a_ = acc.setdefault(sid, {"h": [[0, 0] for _ in range(24)], "series": []})
+                    a_["h"][t.hour][0] += p_; a_["h"][t.hour][1] += 1; a_["series"].append([slot, r1(100 * p_)])
+            fh.close()
+        except (OSError, EOFError):
+            continue
+    if not acc: return None
+    cut = fts(pts(last_slot) - datetime.timedelta(hours=48))
+    out = {}
+    for sid, a_ in acc.items():
+        ser = [x for x in a_["series"] if x[0] > cut]
+        out[sid] = dict(name=names(sid), hours=[r1(100 * c[0] / c[1]) if c[1] else None for c in a_["h"]],
+                        recent=ser, now=(a_["series"][-1] if a_["series"][-1][0] == last_slot else None))
+    return dict(slot=last_slot, unit="percent of TfL baseline (100 = typical)", stations=out)
+
+
+def arrivals_network_now(data_dir):
+    rec = latest_record(data_dir, "arrivalsNetwork")
+    if not rec or not isinstance(rec.get("modes"), dict): return None
+    F = rec.get("fields") or []; vi = F.index("vehicleId") if "vehicleId" in F else None
+    modes = {}
+    for m, rows in rec["modes"].items():
+        if rows is None: continue
+        veh = {r[vi] for r in rows if vi is not None and r[vi]}
+        modes[m] = dict(predictions=len(rows), vehicles=len(veh) or None, stops=len({r[0] for r in rows}))
+    return dict(slot=rec.get("slot"), modes=modes)
+
+
+def glance(S, obs, cn, an):
+    """Headline numbers for the infographic row at the top of the dashboard."""
+    g = {}
+    N = S.get("now") or {}
+    tfl = [l for l in (N.get("lines") or []) if l.get("mode") != "national-rail"]
+    if tfl:
+        good = sum(1 for l in tfl if l.get("cat") == 0)
+        g["lines"] = dict(good=good, total=len(tfl), notGood=[l["name"] for l in tfl if l.get("cat") not in (0, None)][:8])
+    B = (S.get("lifts") or {}).get("board") or {}
+    if B.get("counts"): g["lifts"] = B["counts"]
+    for o in obs:
+        if o.get("key") in ("nationalRailBoards", "bus") and "/" in str(o.get("value")):
+            a_, b_ = str(o["value"]).split("/", 1)
+            try: g["nr" if o["key"] == "nationalRailBoards" else "bus"] = dict(ok=int(a_), total=int(b_), text=o.get("text"))
+            except ValueError: pass
+    if cn:
+        nowv = sorted(((v["now"][1], v["name"], sid) for sid, v in cn["stations"].items() if v.get("now")), reverse=True)
+        g["crowdNow"] = dict(slot=cn["slot"], top=[dict(id=sid, name=n, pct=p_) for p_, n, sid in nowv[:6]], stations=len(nowv))
+    if an: g["trainsNow"] = an
+    return g
+
+
 def write_api(out_dir, data_dir, D, S, now):
     """Stable, versioned JSON feed for apps (e.g. London Commuter v3). Additive changes only within v1."""
     api = os.path.join(out_dir, "api", "v1"); os.makedirs(api, exist_ok=True)
@@ -481,7 +549,25 @@ def main():
             wd, we = mean(0), mean(1)
             allh = [(sum(x for x in (wd[h], we[h]) if x is not None) / max(1, sum(1 for x in (wd[h], we[h]) if x is not None)), h) for h in range(24) if (wd[h] is not None or we[h] is not None)]
             peak = max(allh)[1] if allh else None
-            st[sl] = dict(name=title(sl), wd=wd, we=we, peakHour=peak, mean7d=r1(100 * a_["s7"] / a_["n7"]) if a_["n7"] else None, n=a_["n"])
+            st[sl] = dict(name=title(sl), wd=wd, we=we, peakHour=peak, mean7d=r1(100 * a_["s7"] / a_["n7"]) if a_["n7"] else None, n=a_["n"],
+                          recent=[], dow=[None] * 7, now=None)
+        # drill-down: last 7 days hour by hour, mean by day of week, latest reading
+        dsum = {}
+        for slot in sorted(CR):
+            r = CR[slot]; t = pts(r.get("polledAt") or slot).astimezone(LON)
+            for sl, v in station_map(r).items():
+                if sl not in st or not isinstance(v, dict) or v.get("dataAvailable") is False: continue
+                p_ = v.get("percentageOfBaseline")
+                if not isinstance(p_, (int, float)): continue
+                d_ = dsum.setdefault(sl, [[0, 0] for _ in range(7)]); d_[t.weekday()][0] += p_; d_[t.weekday()][1] += 1
+                if slot >= cutoff7: st[sl]["recent"].append([slot, r1(100 * p_)])
+                st[sl]["now"] = [slot, r1(100 * p_)]
+        for sl, d_ in dsum.items():
+            st[sl]["dow"] = [r1(100 * a / n) if n else None for a, n in d_]
+        latest_cr = max(CR)
+        for sl in st:   # "now" only if this station was in the latest reading; otherwise keep it as "last"
+            st[sl]["last"] = st[sl]["now"]
+            if st[sl]["now"] and st[sl]["now"][0] != latest_cr: st[sl]["now"] = None
         top = sorted([k for k, v in st.items() if v["mean7d"] is not None], key=lambda k: -st[k]["mean7d"])[:10]
         crow = dict(unit="percent of TfL baseline (100 = typical)", stations=st, top7d=top)
     S["crowding"] = crow
@@ -529,6 +615,24 @@ def main():
 
     # ---- now board + observations (plain computed facts, zero tokens) ----
     S["now"], S["observations"] = now_and_observations(D, S, last_global, cutoff7, a.data)
+    # drill-down data for every tube/Elizabeth station goes to its own file, loaded only when asked for
+    try:
+        inv, _ = lift_inventory(a.data)
+        try:
+            nmap = json.load(open(os.path.join(os.path.dirname(os.path.abspath(a.data)), "config", "stationNames.json"), encoding="utf-8"))["names"]
+        except Exception:
+            nmap = {}
+        def stn(sid):
+            base = nmap.get(sid) or ((inv or {}).get(sid, {}).get("name")) or stname.get(sid) or sid
+            return base + (" (Elizabeth line)" if sid.startswith("910G") else "")
+        cn = crowding_network_detail(a.data, stn)
+    except Exception:
+        cn = None
+    if cn:
+        with open(os.path.join(a.out, "crowding.json"), "w", encoding="utf-8") as fh: json.dump(cn, fh, separators=(",", ":"), ensure_ascii=False)
+    try: an = arrivals_network_now(a.data)
+    except Exception: an = None
+    S["glance"] = glance(S, S["observations"], cn, an)
 
     out = os.path.join(a.out, "summary.json")
     with open(out, "w", encoding="utf-8") as fh: json.dump(S, fh, separators=(",", ":"), ensure_ascii=False)

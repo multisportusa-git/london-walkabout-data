@@ -84,6 +84,26 @@ footer{margin-top:40px;color:var(--sub);font-size:12px}
 .tile .tn{font-weight:800;font-size:14px;line-height:1.2}.tile .ts{font-size:12px;opacity:.95}
 .tile.k0{background:var(--c0)}.tile.k1{background:var(--c1);color:#1b1b1b}.tile.k2{background:var(--c2);color:#1b1b1b}.tile.k3{background:var(--c3)}.tile.k4{background:var(--c4)}.tile.k5{background:var(--c5)}.tile.kn{background:var(--cm);color:var(--ink)}
 .obs{display:grid;grid-template-columns:1fr;gap:10px}
+.gl{display:grid;grid-template-columns:1fr;gap:12px;margin-top:18px}
+@media (min-width:720px){.gl{grid-template-columns:repeat(3,1fr)}}
+a.gc{display:block;color:inherit;text-decoration:none;transition:transform .12s,box-shadow .12s;cursor:pointer}
+a.gc:hover,a.gc:focus-visible{transform:translateY(-2px);box-shadow:0 6px 18px #0000001a;outline:none}
+.gc .eb,.dd .eb{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sub)}
+.gc .big{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1}.gc .big small{font-size:18px;font-weight:700;color:var(--sub)}
+.gc .cap{font-size:13px;color:var(--sub);margin-top:4px}.gc .go{font-size:12px;color:var(--accent);margin-top:10px;font-weight:600}
+.donut{display:flex;align-items:center;gap:14px;margin-top:8px}.donut svg{width:92px;height:92px;flex:none}
+.seg{display:flex;gap:2px;height:16px;border-radius:8px;overflow:hidden;margin:12px 0 8px}.seg i{display:block;height:100%}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}.chip{font-size:11px;border:1px solid var(--rule);border-radius:99px;padding:1px 7px;color:var(--sub)}
+a.ob{display:block;color:inherit;text-decoration:none}a.ob:hover{box-shadow:0 6px 18px #0000001a}
+.clk{cursor:pointer}.clk:hover{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.xp input{width:100%;font:inherit;padding:8px 10px;border:1px solid var(--rule);border-radius:10px;background:var(--bg);color:var(--ink);margin:6px 0 8px}
+.xp .tw{max-height:360px;overflow:auto}.xp table{width:100%}
+.dd{border:2px solid var(--accent);margin-top:12px}.dd .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.dd button{font:inherit;border:1px solid var(--rule);background:var(--bg);color:var(--ink);border-radius:99px;padding:4px 12px;cursor:pointer}
+.dd .ch{margin-top:12px}.dd .ch h4{margin:0 0 4px;font-size:13px}.dd svg{width:100%;max-width:760px;height:auto;display:block}
+.dd svg text{font-size:9px;fill:var(--sub)}.dd .ref{stroke:var(--sub);stroke-dasharray:3 3;stroke-width:1}
+.dd .b1{fill:var(--accent)}.dd .b2{fill:var(--accent2)}.dd .bn{fill:var(--accent);opacity:.9}.dd .hl{fill:var(--c1)}
+.dd .ln{fill:none;stroke:var(--accent);stroke-width:2}.dd .pt{fill:var(--accent)}
 .ob{border-left:6px solid var(--c5)}.ob.good{border-left-color:var(--ok)}.ob.warn{border-left-color:var(--c1)}.ob.bad{border-left-color:var(--c4)}
 .ob .v{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.05}.ob .lb{font-size:12px;color:var(--sub);margin:2px 0 6px}.ob p{margin:0;font-size:13px}
 @media (min-width:720px){.obs{grid-template-columns:repeat(3,1fr)}}
@@ -94,7 +114,7 @@ footer{margin-top:40px;color:var(--sub);font-size:12px}
 <body>
 <div class="wrap">
 <header><div><p class="eyebrow">London Walkabout</p><h1>Data Desk</h1><p class="stamp" id="stamp">Loading&hellip;</p></div><button id="theme" type="button" aria-label="Toggle colour theme">Theme</button></header>
-<nav aria-label="Sections"><a href="#now">Now</a><a href="#observations">Observations</a><a href="#health">Data health</a><a href="#lines">Lines</a><a href="#lifts">Lifts</a><a href="#stations">Stations</a><a href="#crowding">Crowding</a><a href="#arrivals">Arrivals</a></nav>
+<nav aria-label="Sections"><a href="#glance">Glance</a><a href="#now">Now</a><a href="#observations">Observations</a><a href="#health">Data health</a><a href="#lines">Lines</a><a href="#lifts">Lifts</a><a href="#stations">Stations</a><a href="#crowding">Crowding</a><a href="#arrivals">Arrivals</a></nav>
 <main id="app"><div class="card" style="margin-top:18px">Loading data&hellip;</div></main>
 <footer>Source: TfL Unified API, collected hourly by a scheduled job and stored as plain files in this repository. This page makes no external requests; it only reads <code>summary.json</code> (or <code>summary.js</code> when opened from disk).</footer>
 </div>
@@ -204,13 +224,14 @@ function stations(S){
 function crowding(S){
  var C=S.crowding;if(!C||!C.stations)return sec("crowding","Crowding","No crowding data yet.",[]);
  var top=C.top7d,st=C.stations,mx=1;top.forEach(function(k){st[k].wd.concat(st[k].we).forEach(function(v){if(v!=null&&v>mx)mx=v})});
- var kids=[card("Busiest stations, last 7 days (mean % of normal)",top.map(function(k){return bar(st[k].name,st[k].mean7d/mx,st[k].mean7d+"%")}))];
+ var kids=[card("Busiest stations, last 7 days (mean % of normal) · tap for detail",top.map(function(k){var r=bar(st[k].name,st[k].mean7d/mx,st[k].mean7d+"%");r.classList.add("clk");r.addEventListener("click",function(){openCrowd(k,"t")});return r}))];
  var sm=el("div",{class:"sm"},top.map(function(k){var s=st[k],W=240,H=56;
   function path(a){var d="",on=false;a.forEach(function(v,i){if(v==null){on=false;return}d+=(on?"L":"M")+(i/23*W).toFixed(1)+" "+(H-4-v/mx*(H-10)).toFixed(1);on=true});return d}
   var svg=sv("svg",{viewBox:"0 0 "+W+" "+H,preserveAspectRatio:"none",role:"img","aria-label":s.name+" crowding by hour"},[sv("line",{class:"base",x1:0,x2:W,y1:H-4,y2:H-4}),sv("path",{class:"we",d:path(s.we)}),sv("path",{class:"wd",d:path(s.wd)})]);
-  return el("div",{class:"card"},[el("div",{class:"nm",title:s.name},[s.name]),svg,el("div",{class:"pk"},["Peak "+(s.peakHour==null?"-":String(s.peakHour).padStart(2,"0")+":00")+" · "+s.mean7d+"% avg"])])}));
+  var c=el("div",{class:"card clk",tabindex:"0",title:"Open "+s.name},[el("div",{class:"nm",title:s.name},[s.name]),svg,el("div",{class:"pk"},["Peak "+(s.peakHour==null?"-":String(s.peakHour).padStart(2,"0")+":00")+" · "+s.mean7d+"% avg"])]);c.addEventListener("click",function(){openCrowd(k,"t")});return c}));
  var lg=el("div",{class:"legend"},[el("span",null,[el("b",{style:"background:var(--accent)"}),"Weekday"]),el("span",null,[el("b",{style:"background:var(--accent2)"}),"Weekend"]),el("span",null,["Each chart: 00:00 to 23:00 UK time, same scale for all stations"])]);
  kids.push(el("div",{style:"margin-top:12px"},[sm,lg]));
+ kids.push(el("div",{id:"cdetail"}));kids.push(el("div",{style:"margin-top:12px"},[explorer(S)]));
  return sec("crowding","Crowding","Live crowding as a share of TfL’s normal level for that station and time. 100% means typical.",kids)}
 
 function arrivals(S){
@@ -232,16 +253,93 @@ function nowBoard(S){
 function observations(S){
  var O=S.observations||[];if(!O.length)return sec("observations","Observations","Nothing to report yet.",[]);
  return sec("observations","Observations","Computed from the record on every run; no AI involved.",[el("div",{class:"obs"},O.map(function(o){
-  return el("div",{class:"card ob "+(o.tone||"neutral")},[el("div",{class:"v"},[o.value]),el("div",{class:"lb"},[o.label]),el("p",null,[o.text])])}))])}
+  return el("a",{class:"card ob "+(o.tone||"neutral"),href:"#"+(SECTION_OF[o.key]||"now")},[el("div",{class:"v"},[o.value]),el("div",{class:"lb"},[o.label]),el("p",null,[o.text]),el("div",{class:"small",style:"color:var(--accent);margin-top:6px;font-weight:600"},["Explore →"])])}))])}
+
+
+var SECTION_OF={network:"now",nationalRail:"now",bus:"now",nationalRailBoards:"now",nationalRailIncidents:"now",worstLine:"lines",lifts:"lifts",liftStoplight:"lifts",longestLift:"lifts",notices:"stations",busiest:"crowding",health:"health"};
+function donut(frac,color){var r=38,c=2*Math.PI*r,f=Math.max(0,Math.min(1,frac||0));
+ return sv("svg",{viewBox:"0 0 92 92",role:"img","aria-label":Math.round(f*100)+"%"},[sv("circle",{cx:46,cy:46,r:r,fill:"none",stroke:"var(--cm)","stroke-width":12}),
+  sv("circle",{cx:46,cy:46,r:r,fill:"none",stroke:color,"stroke-width":12,"stroke-linecap":"round","stroke-dasharray":(f*c).toFixed(1)+" "+c.toFixed(1),transform:"rotate(-90 46 46)"}),
+  (function(){var t=sv("text",{x:46,y:51,"text-anchor":"middle","font-size":"17","font-weight":"800",fill:"var(--ink)"});t.textContent=Math.round(f*100)+"%";return t})()])}
+function gcard(href,eyebrow,kids,label){var a=el("a",{class:"card gc",href:href,"aria-label":label||eyebrow},[el("div",{class:"eb"},[eyebrow])].concat(kids,[el("div",{class:"go"},["Explore →"])]));return a}
+function glance(S){
+ var G=S.glance||{},cards=[];
+ if(G.lines){var L=G.lines;cards.push(gcard("#now","TfL lines right now",[el("div",{class:"donut"},[donut(L.good/L.total,"var(--c0)"),el("div",null,[el("div",{class:"big"},[String(L.good),el("small",null,[" / "+L.total])]),el("div",{class:"cap"},["lines with good service"])])]),
+  L.notGood.length?el("div",{class:"chips"},L.notGood.map(function(n){return el("span",{class:"chip"},[n])})):null],"TfL lines right now: "+L.good+" of "+L.total+" good service"))}
+ if(G.lifts){var F=G.lifts,t=F.red+F.amber+F.green||1;cards.push(gcard("#lifts","Step-free access",[el("div",{class:"big"},[String(F.red),el("small",null,[" stations with no lift working"])]),
+  el("div",{class:"seg",role:"img","aria-label":F.red+" red, "+F.amber+" amber, "+F.green+" green"},[["c4",F.red],["c1",F.amber],["c0",F.green]].map(function(x){return el("i",{style:"flex:"+x[1]+";background:var(--"+x[0]+")",title:x[1]})})),
+  el("div",{class:"cap"},[F.amber+" with some lifts out · "+F.green+" watched stations all working"])],"Step-free access"))}
+ if(G.nr){var N=G.nr,f=N.total?N.ok/N.total:0;cards.push(gcard("#now","National Rail departures",[el("div",{class:"big"},[Math.round(f*100)+"%",el("small",null,[" on time"])]),
+  el("div",{class:"seg"},[el("i",{style:"flex:"+N.ok+";background:var(--c0)"}),el("i",{style:"flex:"+(N.total-N.ok)+";background:var(--c4)"})]),el("div",{class:"cap"},[N.text||""])],"National Rail departures on time"))}
+ if(G.bus){var B=G.bus;cards.push(gcard("#now","Buses",[el("div",{class:"donut"},[donut(B.ok/B.total,"var(--accent)"),el("div",null,[el("div",{class:"big"},[num(B.ok),el("small",null,[" / "+num(B.total)])]),el("div",{class:"cap"},["routes with good service"])])])],"Buses"))}
+ if(G.crowdNow&&G.crowdNow.top.length){var C=G.crowdNow,mx=Math.max.apply(null,C.top.map(function(x){return x.pct}).concat([100]));
+  var cc=gcard("#crowding","Busiest stations now",[el("div",{class:"cap"},["% of the station's normal level, "+fmtSlot(C.slot)])].concat(C.top.map(function(x){var r=bar(x.name,x.pct/mx,x.pct+"%",{mark:100/mx,markTitle:"100% = normal"});r.classList.add("clk");r.addEventListener("click",function(ev){ev.preventDefault();openCrowd(x.id,"n")});return r})),"Busiest stations now");cards.push(cc)}
+ var TN=G.trainsNow;if(TN&&TN.modes){var ML={tube:"Tube","elizabeth-line":"Elizabeth line",overground:"Overground",dlr:"DLR",tram:"Tram","river-bus":"River bus"},ks=Object.keys(ML).filter(function(k){return TN.modes[k]}),mx2=Math.max.apply(null,ks.map(function(k){return TN.modes[k].predictions}).concat([1]));
+  cards.push(gcard("#arrivals","Live predictions across the network",[el("div",{class:"big"},[num(ks.reduce(function(a,k){return a+TN.modes[k].predictions},0)),el("small",null,[" arrivals predicted"])]),el("div",{class:"cap"},[fmtSlot(TN.slot)])].concat(ks.map(function(k){var m=TN.modes[k];return bar(ML[k],m.predictions/mx2,num(m.predictions))})),"Live predictions"))}
+ else cards.push(gcard("#arrivals","Live predictions across the network",[el("div",{class:"cap"},["Every TfL mode, network-wide: starts with the next hourly reading."])],"Live predictions"));
+ return el("section",{id:"glance"},[el("h2",null,["At a glance"]),el("p",{class:"lede"},["Latest hourly reading. Tap a card to explore it."]),el("div",{class:"gl"},cards)])}
+
+/* ---------- crowding drill-down ---------- */
+var CN=null,CNP=null,SEL=null;
+function loadCN(){if(CNP)return CNP;CNP=(window.fetch&&location.protocol!=="file:")?fetch("crowding.json?"+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(j){CN=j;return j}).catch(function(){return null}):Promise.resolve(null);return CNP}
+function hhmm(h){return String(h).padStart(2,"0")+":00"}
+function barsChart(series,opts){var W=480,H=130,pl=26,pb=16,n=24,mx=opts.max||1,bw=(W-pl)/n,g=sv("svg",{viewBox:"0 0 "+W+" "+H,role:"img","aria-label":opts.label}),k=series.length;
+ var gy=function(v){return (H-pb-(v/mx)*(H-pb-6)).toFixed(1)},gv=mx>=100?100:(mx>=50?50:(mx>=20?20:10));
+ g.appendChild(sv("line",{class:"ref",x1:pl,x2:W,y1:gy(gv),y2:gy(gv)}));var t100=sv("text",{x:0,y:+gy(gv)+3});t100.textContent=gv+"%";g.appendChild(t100);
+ for(var h=0;h<n;h++){series.forEach(function(s,j){var v=s.data[h];if(v==null)return;var hh=Math.max(1,v/mx*(H-pb-6)),x=pl+h*bw+bw*.12+j*(bw*.76/k);
+  var r=sv("rect",{x:x.toFixed(1),y:(H-pb-hh).toFixed(1),width:(bw*.76/k-1).toFixed(1),height:hh.toFixed(1),rx:2,class:(opts.hl===h&&k==1)?"hl":s.cls});r.appendChild(sv("title",null,[document.createTextNode(s.name+" "+hhmm(h)+": "+v+"%")]));g.appendChild(r)});
+  if(h%3==0){var tx=sv("text",{x:(pl+h*bw+2).toFixed(1),y:H-3});tx.textContent=hhmm(h).slice(0,2);g.appendChild(tx)}}
+ return g}
+function lineChart(pts,label){var W=480,H=120,pl=26,pb=16,mx=Math.max.apply(null,pts.map(function(p){return p[1]}).concat([5]))*1.15;if(!pts.length)return el("div",{class:"small"},["No readings in this period."]);
+ var t0=new Date(pts[0][0]).getTime(),t1=new Date(pts[pts.length-1][0]).getTime()||t0+1,X=function(t){return pl+(t-t0)/Math.max(1,t1-t0)*(W-pl-4)},Y=function(v){return H-pb-v/mx*(H-pb-6)};
+ var gv=mx>=100?100:(mx>=50?50:(mx>=20?20:10)),g=sv("svg",{viewBox:"0 0 "+W+" "+H,role:"img","aria-label":label});g.appendChild(sv("line",{class:"ref",x1:pl,x2:W,y1:Y(gv),y2:Y(gv)}));
+ var d="",prev=null;pts.forEach(function(p){var t=new Date(p[0]).getTime();d+=((prev!=null&&t-prev>3*3600e3)||prev==null?"M":"L")+X(t).toFixed(1)+" "+Y(p[1]).toFixed(1);prev=t});g.appendChild(sv("path",{class:"ln",d:d}));
+ pts.forEach(function(p){var c=sv("circle",{class:"pt",cx:X(new Date(p[0]).getTime()).toFixed(1),cy:Y(p[1]).toFixed(1),r:2.2});c.appendChild(sv("title",null,[document.createTextNode(fmtSlot(p[0])+": "+p[1]+"%")]));g.appendChild(c)});
+ [pts[0],pts[pts.length-1]].forEach(function(p,i){var tx=sv("text",{x:i?W-60:pl,y:H-3});tx.textContent=fmtSlot(p[0]).replace(" UK","");g.appendChild(tx)});
+ var ty=sv("text",{x:0,y:Y(gv)+3});ty.textContent=gv+"%";g.appendChild(ty);return g}
+function openCrowd(id,kind){SEL={id:id,kind:kind};var box=document.getElementById("cdetail");if(!box)return;
+ if(location.hash!=="#crowding")document.getElementById("crowding").scrollIntoView({behavior:"smooth"});
+ var draw=function(){box.innerHTML="";var S=window.__S||{},T=(S.crowding||{}).stations||{},d,name,now,kids=[];
+  if(kind==="t"){d=T[id];if(!d)return;name=d.name;now=d.now;
+   var mx=Math.max.apply(null,d.wd.concat(d.we).filter(function(v){return v!=null}).concat([5]))*1.15;
+   kids.push(el("div",{class:"ch"},[el("h4",null,["Typical day, by hour (UK time): weekday vs weekend"]),barsChart([{name:"Weekday",data:d.wd,cls:"b1"},{name:"Weekend",data:d.we,cls:"b2"}],{max:mx,label:name+" by hour"}),el("div",{class:"legend"},[el("span",null,[el("b",{style:"background:var(--accent)"}),"Weekday"]),el("span",null,[el("b",{style:"background:var(--accent2)"}),"Weekend"]),el("span",null,["dashed line = scale guide; 100% = normal"])])]));
+   kids.push(el("div",{class:"ch"},[el("h4",null,["Every reading, last 7 days"]),lineChart(d.recent||[],name+" last 7 days")]));
+   if(d.dow&&d.dow.some(function(v){return v!=null})){var DN=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],m2=Math.max.apply(null,d.dow.filter(function(v){return v!=null}).concat([1]));
+    kids.push(el("div",{class:"ch"},[el("h4",null,["Average by day of week (all history)"])].concat(d.dow.map(function(v,i){return bar(DN[i],(v||0)/m2,v==null?"-":v+"%")}))))}
+  }else{d=CN&&CN.stations[id];if(!d){box.appendChild(el("div",{class:"small"},["Loading…"]));return}name=d.name;now=d.now;
+   var cur=new Date().toLocaleString("en-GB",{hour:"2-digit",hour12:false,timeZone:"Europe/London"})|0,m3=Math.max.apply(null,d.hours.filter(function(v){return v!=null}).concat([5]))*1.15;
+   kids.push(el("div",{class:"ch"},[el("h4",null,["Average by hour of day (UK time), since network-wide collection began"]),barsChart([{name:"Average",data:d.hours,cls:"bn"}],{max:m3,hl:cur,label:name+" by hour"}),el("div",{class:"small"},["Highlighted bar: the current hour. Values are % of the station's normal level (100% = normal)."])]));
+   kids.push(el("div",{class:"ch"},[el("h4",null,["Every reading, last 48 hours"]),lineChart(d.recent||[],name+" last 48 hours")]))}
+  var close=el("button",{type:"button"},["Close"]);close.addEventListener("click",function(){SEL=null;box.innerHTML="";box.className=""});
+  box.className="card dd";box.appendChild(el("div",{class:"top"},[el("div",null,[el("div",{class:"eb"},["Station detail"]),el("h3",{style:"margin:2px 0"},[name]),
+   el("div",{class:"big",style:"font-size:34px;font-weight:800"},[now?now[1]+"%":"-",el("small",{style:"font-size:13px;color:var(--sub);font-weight:600"},[now?"  of normal at "+fmtSlot(now[0]):(d.last?"  no reading this hour (last "+d.last[1]+"% at "+fmtSlot(d.last[0])+")":"  no live reading this hour")])])]),close]));
+  kids.forEach(function(k){box.appendChild(k)})};
+ if(kind==="n"&&!CN){box.className="card dd";box.innerHTML="<div class='small'>Loading…</div>";loadCN().then(draw)}else draw()}
+function explorer(S){
+ var T=(S.crowding||{}).stations||{},wrap=el("div",{class:"card xp"},[el("h3",null,["Explore every station"]),el("div",{class:"small"},["Search, sort, and tap a station for its hour-by-hour detail. Tracked stations have history since Sept; all other tube and Elizabeth line stations since 24 Oct."])]);
+ var inp=el("input",{type:"search",placeholder:"Search stations…","aria-label":"Search stations"}),tb=el("tbody"),sortKey="now",tw=el("div",{class:"tw"});
+ var head=el("tr",null,[["name","Station"],["now","Now"],["peak","Usual peak"]].map(function(c){var th=el("th",{class:c[0]==="name"?"clk":"r clk",title:"Sort"},[c[1]]);th.addEventListener("click",function(){sortKey=c[0];draw()});return th}));
+ tw.appendChild(el("table",null,[el("thead",null,[head]),tb]));wrap.appendChild(inp);wrap.appendChild(tw);
+ function rows(){var R=[];Object.keys(T).forEach(function(k){var d=T[k];R.push({id:k,kind:"t",name:d.name+" ★",now:d.now?d.now[1]:null,peak:d.peakHour})});
+  if(CN)Object.keys(CN.stations).forEach(function(k){var d=CN.stations[k],h=d.hours,pk=null,pv=-1;h.forEach(function(v,i){if(v!=null&&v>pv){pv=v;pk=i}});R.push({id:k,kind:"n",name:d.name,now:d.now?d.now[1]:null,peak:pk})});return R}
+ function draw(){var q=inp.value.trim().toLowerCase(),R=rows().filter(function(r){return!q||r.name.toLowerCase().indexOf(q)>=0});
+  R.sort(function(a,b){if(sortKey==="name")return a.name.localeCompare(b.name);var x=a[sortKey],y=b[sortKey];return (y==null?-1:y)-(x==null?-1:x)});
+  tb.innerHTML="";R.slice(0,400).forEach(function(r){var tr=el("tr",{class:"clk",tabindex:"0"},[el("td",null,[r.name]),el("td",{class:"r"},[r.now==null?"-":r.now+"%"]),el("td",{class:"r"},[r.peak==null?"-":hhmm(r.peak)])]);
+   var go=function(){openCrowd(r.id,r.kind)};tr.addEventListener("click",go);tr.addEventListener("keydown",function(e){if(e.key==="Enter")go()});tb.appendChild(tr)})}
+ inp.addEventListener("input",draw);draw();loadCN().then(function(){draw()});
+ return el("div",null,[wrap,el("div",{class:"small",style:"margin-top:6px"},["★ = tracked station with history since September."])])}
 
 function render(S){
+ window.__S=S;
  var app=$("#app");app.innerHTML="";
  var M=S.meta||{};
  $("#stamp").textContent="Data through "+fmtSlot(M.dataThrough)+" · page built "+fmtSlot(M.generatedAt);
  var recs=0,r=M.records||{};Object.keys(r).forEach(function(k){recs+=r[k].records||0});
  var cov=S.coverage&&S.coverage.lineStatus;
+ try{app.appendChild(glance(S))}catch(e){app.appendChild(el("div",{class:"err"},["Could not draw the glance row: "+e.message]))}
  app.appendChild(el("div",{class:"grid kpis"},[kpi(num(recs),"readings stored"),kpi(cov?pct(cov.pct):"-","line-status hours captured"),kpi(S.lifts&&S.lifts.current?S.lifts.current.lifts:"-","lifts out now"),kpi(cov?String(Math.round((new Date(cov.last)-new Date(cov.first))/864e5)):"-","days of history")]));
- [nowBoard,observations,health,lines,lifts,stations,crowding,arrivals].forEach(function(f){try{app.appendChild(f(S))}catch(e){app.appendChild(el("div",{class:"err"},["Could not draw a section: "+e.message]))}})}
+ [nowBoard,observations,health,lines,lifts,stations,crowding,arrivals].forEach(function(f){try{app.appendChild(f(S))}catch(e){app.appendChild(el("div",{class:"err"},["Could not draw a section: "+e.message]))}});
+ if(SEL)openCrowd(SEL.id,SEL.kind)}
 
 function fail(msg){$("#stamp").textContent="Data unavailable";$("#app").innerHTML="";$("#app").appendChild(el("div",{class:"err",style:"margin-top:18px"},[msg]))}
 function load(){
