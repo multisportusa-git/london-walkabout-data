@@ -22,6 +22,8 @@ National Rail (`.ndjson.gz`): `nationalRailDepartures` (boards at the watched st
 
 `nationalRailStations` (`.ndjson.gz`, once a day from 03:00 UTC): the Knowledgebase stations feed (2,614 stations: facilities, lifts, step-free access, staffing, ticket buying, transport links, alerts). Each record has `index` (CRS code → fingerprint of that station's entry), `changed` (the full entry of every station new or changed since the previous day; all stations on the first day) and `removed`. A station's entry on any day is its latest `changed` entry up to that day.
 
+`stationAccess` (plain `.ndjson`, once a day from 03:00 UTC): TfL's station accessibility data. Each record names a ZIP (`file`, e.g. `_reference/tfl-stationdata/<sha>.zip` under the raw data base) holding `Lifts.csv` (every lift, the areas it links), `Stations.csv`, `Platforms.csv`, step-free paths and toilets. A new ZIP is stored only when TfL changes the content. The dashboard's lift stoplight (`summary.json` → `lifts.board`: per station `working`, `total`, `colour` red/amber/green, `stepFreeLost`, `since`, `detail`) is computed from it plus `liftDisruptions`.
+
 - `lineStatus` statuses carry `validity` ([from, to] pairs) and `disruption` (category, created, additionalInfo, affectedStops NaPTAN ids) from 24 Oct 2026; older records have severity/description/reason only.
 - `arrivalsDetail` rows are arrays in the order given by the record's `fields` list: naptanId, lineId, platformName, direction, destinationNaptanId, timeToStation (seconds after `polledAt`), vehicleId.
 
