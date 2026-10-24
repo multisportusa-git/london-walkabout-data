@@ -40,6 +40,21 @@ class AppendMissingTests(unittest.TestCase):
             self.assertIn("0 records appended", r2.stdout)              # idempotent
             self.assertEqual(len((data / "2026-10-24.ndjson").read_text().splitlines()), 2)
 
+    def test_gzip_dataset_topped_up_in_its_own_gz_file(self):
+        import gzip
+        with tempfile.TemporaryDirectory() as tmp:
+            data = Path(tmp) / "data" / "busLineStatus"
+            data.mkdir(parents=True)
+            gz = data / "2026-10-24.ndjson.gz"
+            gz.write_bytes(gzip.compress(b'{"slot":"2026-10-24T18:00:00Z","polledAt":"2026-10-24T18:00:02Z"}\n'))
+            export_doc(tmp, "busLineStatus", "reading-a", "2026-10-24T18:25:10Z")   # present (inside .gz) -> skipped
+            export_doc(tmp, "busLineStatus", "reading-b", "2026-10-24T19:25:10Z")   # missing -> appended to .gz
+            r = run(BACKFILL, "--export", Path(tmp) / "export", "--out", Path(tmp) / "data", "--append-missing")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertFalse((data / "2026-10-24.ndjson").exists())     # no plain twin beside the .gz
+            slots = [json.loads(l)["slot"] for l in gzip.open(gz, "rt") if l.strip()]
+            self.assertEqual(slots, ["2026-10-24T18:00:00Z", "2026-10-24T19:00:00Z"])
+
     def test_full_rebuild_refuses_on_live_repo(self):
         with tempfile.TemporaryDirectory() as tmp:
             data = Path(tmp) / "data" / "lineStatus"

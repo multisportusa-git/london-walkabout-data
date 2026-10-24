@@ -10,8 +10,9 @@ SAFETY: this tool rebuilds data/<dataset>/ from scratch, so it REFUSES to run wh
 already holds any record written by the live collector (a record without legacyDocId). It is
 only for building a fresh repo; never run it on a repo that is already collecting.
 """
-import argparse, json, os, shutil, sys, datetime, collections
+import argparse, gzip, json, os, shutil, sys, datetime, collections
 DATASETS = ["liftDisruptions", "lineStatus", "stopDisruptions", "crowdingReadings", "arrivalsReadings", "busLineStatus"]
+GZIP_DATASETS = {"busLineStatus"}  # stored as .ndjson.gz by the live collector
 LEGACY = ["interchanges", "watchedStations", "watchedPiers", "lineOperatingHours"]
 
 def parse_ts(s):
@@ -66,16 +67,24 @@ def append_missing(export, out):
         d = os.path.join(out, ds)
         if os.path.isdir(d):
             for fn in os.listdir(d):
-                for line in open(os.path.join(d, fn), encoding="utf-8", errors="replace"):
+                fp = os.path.join(d, fn)
+                fh = gzip.open(fp, "rt", encoding="utf-8", errors="replace") if fn.endswith(".gz") else open(fp, encoding="utf-8", errors="replace")
+                for line in fh:
                     try: present.add(json.loads(line)["slot"])
                     except Exception: pass
+                fh.close()
         items = sorted((convert(ds, lid, doc) for lid, doc in exp[ds]), key=lambda x: x[0])
         n = 0
         for t, rec in items:
             if rec["slot"] in present: continue
             os.makedirs(d, exist_ok=True)
-            with open(os.path.join(d, rec["slot"][:10] + ".ndjson"), "a", encoding="utf-8") as f:
-                f.write(json.dumps(rec, separators=(",", ":"), ensure_ascii=False) + "\n")
+            line = json.dumps(rec, separators=(",", ":"), ensure_ascii=False) + "\n"
+            if ds in GZIP_DATASETS:   # same layout as the live collector: one gzip member appended per record
+                with open(os.path.join(d, rec["slot"][:10] + ".ndjson.gz"), "ab") as f:
+                    f.write(gzip.compress(line.encode("utf-8"), mtime=0))
+            else:
+                with open(os.path.join(d, rec["slot"][:10] + ".ndjson"), "a", encoding="utf-8") as f:
+                    f.write(line)
             present.add(rec["slot"]); n += 1
         print(f"{ds}: appended {n}"); added += n
     print(f"TOP-UP DONE: {added} records appended, nothing removed")
