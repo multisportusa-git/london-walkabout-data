@@ -87,6 +87,8 @@ jobs:
           rc=$?
           echo "rc=$rc" >> "$GITHUB_OUTPUT"
           echo "collector exit code: $rc"
+          # Daily rollups for the dashboard's time ranges (derived files, committed with the data).
+          python collector/rollup.py --data data || echo "::warning::rollup failed (raw data unaffected)"
       # Raw data (including health lines for failed hours) is committed BEFORE anything else,
       # so a dashboard bug can never block or lose a reading.
       - name: Commit and push raw data

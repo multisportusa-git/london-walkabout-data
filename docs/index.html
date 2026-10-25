@@ -160,12 +160,58 @@ button.tile[aria-expanded="true"] .cv{transform:rotate(180deg)}
 .h24 .strip{display:grid;grid-template-columns:repeat(24,1fr);gap:3px}.h24 .strip i{height:22px;border-radius:5px;background:var(--cm)}
 .h24 .ax{display:flex;justify-content:space-between;font-size:11px;color:var(--sub);margin-top:5px;font-weight:600}
 @media (max-width:560px){.lp-tt{font-size:23px}.st{grid-template-columns:1fr}.st-ic{width:38px;height:38px}.lp-bd{padding:14px}.lp-hd{padding:18px 16px}}
+/* time bar + range-aware sections */
+.stick{position:sticky;top:0;z-index:6;background:var(--bg);border-bottom:1px solid var(--rule);margin:10px 0 0}
+.stick nav{position:static;border-bottom:0;margin:0;padding:10px 0 6px}
+section{scroll-margin-top:104px}
+.tbar{display:flex;gap:4px;overflow-x:auto;padding:4px 0 10px;align-items:center;scrollbar-width:none;font-family:"Plus Jakarta Sans",system-ui,sans-serif}
+.tb{flex:none;font:inherit;font-size:12px;font-weight:700;padding:5px 10px;border-radius:99px;border:1px solid var(--rule);background:var(--card);color:var(--ink);cursor:pointer}
+.tb.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}.tb:disabled{opacity:.38;cursor:not-allowed}
+.tb:not(:disabled):not(.on):hover{border-color:var(--accent)}.tb:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tbl{flex:none;font-size:12px;color:var(--sub);margin-left:8px;white-space:nowrap}.tbc{display:inline-flex;gap:6px;align-items:center;font-size:12px;color:var(--sub);flex:none}
+.tbc input{font:inherit;font-size:12px;padding:4px 6px;border:1px solid var(--rule);border-radius:8px;background:var(--card);color:var(--ink)}
+.nowchip{margin-left:8px;vertical-align:middle;font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-weight:700}
+#observations,#lines{font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#observations h2,#lines h2{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.ins-grid{grid-auto-flow:row dense}.ins-grid>*{min-width:0}@media (min-width:720px){.ins-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.ins .nowchip{align-self:flex-start;margin-left:0}
+button.ins{font:inherit;text-align:left;color:inherit;cursor:pointer;display:flex;flex-direction:column;gap:6px;transition:transform .14s,box-shadow .14s}
+button.ins:hover{transform:translateY(-2px);box-shadow:0 8px 22px #00000026}button.ins:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button.ins[aria-expanded="true"]{box-shadow:0 0 0 2px var(--accent)}
+.ins .eb{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--sub)}
+.ins-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.ins .v{font-size:32px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-top:4px;word-break:break-word}.ins .v small{font-size:15px;color:var(--sub);font-weight:700}
+.ins .lb{margin:2px 0 0}.ins p{margin:0;font-size:13px;color:var(--sub)}.ins .go{font-size:12px;color:var(--accent);font-weight:700;margin-top:auto}
+.ins-top>div:first-child{flex:1 1 auto;min-width:0}.ins-viz{flex:0 1 44%;min-width:0;display:flex;justify-content:flex-end}.ins-viz>*{max-width:100%}.ins-viz>svg{width:76px;height:76px;flex:none}.ins-viz .seg{width:100%;min-width:90px;margin:8px 0 0}
+.ins-viz .mb{min-width:0;width:100%}.ins-viz .mbr{grid-template-columns:minmax(0,1fr) 40px auto}.spk{width:100%!important;max-width:150px;height:40px!important}.gauge{width:100%!important;max-width:110px;height:62px!important}.ins-viz .dots{flex:none}.ins-below .mb{min-width:0}.ins-below .mbr{grid-template-columns:minmax(0,150px) 1fr 44px;font-size:12px}
+.dl{font-size:12px;font-weight:700;color:var(--sub)}.dl.up{color:var(--ok)}.dl.dn{color:var(--c4)}
+.mb{display:grid;gap:4px;min-width:150px}.mbr{display:grid;grid-template-columns:minmax(60px,1fr) 70px auto;gap:6px;align-items:center;font-size:11px}
+.mbn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--sub);font-weight:600}.mbt{height:8px;border-radius:4px;background:var(--cm);overflow:hidden}.mbt i{display:block;height:100%;border-radius:4px}.mbv{font-weight:700;text-align:right}
+.lp-bd .mb{max-width:640px}.lp-bd .mbr{grid-template-columns:minmax(120px,220px) 1fr 54px;font-size:13px}.lp-bd .mbt{height:10px}
+.dots{display:grid;grid-template-columns:repeat(7,12px);gap:4px}.dots i{width:12px;height:12px;border-radius:4px;display:block}
+.dsub{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);margin-top:4px}
+.trend{width:100%;height:auto;display:block}.trend text{font-size:10px;fill:var(--sub)}.trend .gl{stroke:var(--rule);stroke-width:1}
+.rk{display:grid;gap:4px}.rkr,.lxr{font:inherit;color:inherit;display:grid;grid-template-columns:minmax(110px,220px) 1fr 48px;gap:10px;align-items:center;text-align:left;background:none;border:0;border-radius:10px;padding:6px 8px;cursor:pointer}
+.rkr:hover,.lxr:hover{background:color-mix(in srgb,var(--accent) 8%,transparent)}.rkr .seg,.lxr .seg{margin:0}.rkn{font-weight:700;font-size:13px}.rkv,.lxv{font-weight:800;text-align:right}
+.ftools{display:grid;gap:8px;margin:4px 0}.fchips{display:flex;flex-wrap:wrap;gap:6px}
+.fchip{font:inherit;font-size:12px;font-weight:700;padding:5px 11px;border-radius:99px;border:1px solid var(--rule);background:var(--card);color:var(--ink);cursor:pointer}.fchip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.frow{display:flex;gap:8px;flex-wrap:wrap}.frow input,.frow select{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink)}.frow input{flex:1;min-width:180px}
+.lx{display:grid;gap:2px;background:var(--card);border:1px solid var(--rule);border-radius:16px;padding:8px}
+.lxr{grid-template-columns:minmax(130px,240px) 1fr 52px 40px;padding:9px 10px}.lxr[aria-expanded="true"]{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.lxn{font-weight:800;font-size:14px;display:flex;flex-direction:column}.lxn small{font-size:11px;color:var(--sub);font-weight:600}
+.lxd{font-size:12px;font-weight:800;text-align:right;color:var(--sub)}.lxd.up{color:var(--ok)}.lxd.dn{color:var(--c4)}
+.lx .lp{margin:6px 0 10px}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}.kpc{background:var(--bg);border-radius:12px;padding:10px 12px}.kpc b{display:block;font-size:22px;font-weight:800;letter-spacing:-.02em}.kpc span{font-size:12px;color:var(--sub);font-weight:600}
+.hstrip{display:grid;gap:2px}.hstrip i{height:24px;border-radius:4px;display:block}
+.heat{display:grid;grid-template-columns:34px repeat(24,1fr);gap:2px;font-size:10px;color:var(--sub);max-width:760px}.heat i{display:block;height:16px;border-radius:3px;background:var(--cm)}.heat .hl{font-weight:700}.heat .hx{text-align:left}
+.msgs{display:grid;gap:8px}.msg{display:grid;grid-template-columns:52px 1fr;gap:10px;font-size:14px;line-height:1.5;padding:10px 12px;border-radius:12px;background:var(--bg)}.mh{font-weight:800;color:var(--c4)}
+@media (max-width:560px){.ins-top{flex-direction:column}.ins-viz{max-width:100%;width:100%}.ins-viz .seg{width:100%}.ins-viz .mb{min-width:0}.rkr,.lxr{grid-template-columns:1fr 70px 44px}.rkr .seg{display:none}.lxr{grid-template-columns:1fr 60px 44px 34px}.heat{grid-template-columns:26px repeat(24,1fr)}.heat .hx{font-size:8px}}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header><div><p class="eyebrow">London Walkabout</p><h1>Data Desk</h1><p class="stamp" id="stamp">Loading&hellip;</p></div><button id="theme" type="button" aria-label="Toggle colour theme">Theme</button></header>
-<nav aria-label="Sections"><a href="#glance">Glance</a><a href="#now">Now</a><a href="#observations">Observations</a><a href="#health">Data health</a><a href="#lines">Lines</a><a href="#lifts">Lifts</a><a href="#stations">Stations</a><a href="#crowding">Crowding</a><a href="#arrivals">Arrivals</a></nav>
+<div class="stick"><nav aria-label="Sections"><a href="#glance">Glance</a><a href="#now">Now</a><a href="#observations">Observations</a><a href="#health">Data health</a><a href="#lines">Lines</a><a href="#lifts">Lifts</a><a href="#stations">Stations</a><a href="#crowding">Crowding</a><a href="#arrivals">Arrivals</a></nav><div id="tbar" class="tbar" role="toolbar" aria-label="Time range"></div></div>
 <main id="app"><div class="card" style="margin-top:18px">Loading data&hellip;</div></main>
 <footer>Source: TfL Unified API, collected hourly by a scheduled job and stored as plain files in this repository. This page makes no external requests; it only reads <code>summary.json</code> (or <code>summary.js</code> when opened from disk).</footer>
 </div>
@@ -442,6 +488,183 @@ function explorer(S){
  inp.addEventListener("input",draw);draw();loadCN().then(function(){draw()});
  return el("div",null,[wrap,el("div",{class:"small",style:"margin-top:6px"},["★ = tracked station with history since September."])])}
 
+/* ---------- Time ranges: one control for the whole report (rollups summed in the browser, zero tokens) ---------- */
+var RANGES=[{k:"now",l:"Now",h:1},{k:"24h",l:"24 h",h:24},{k:"48h",l:"48 h",h:48},{k:"7d",l:"7 d",h:168},{k:"14d",l:"14 d",h:336},{k:"30d",l:"30 d",h:720},{k:"90d",l:"90 d",h:2160},{k:"6m",l:"6 mo",h:4392},{k:"1y",l:"1 yr",h:8760},{k:"next7",l:"Next 7 d",soon:1},{k:"custom",l:"Custom"}];
+var RG={k:"now",from:null,to:null},IDX=null,DAYS={},RS=null,LSEL=null,OSEL=null;
+var NOW_ONLY=["glance","health","lifts","stations","crowding","arrivals"];
+var DS14={lineStatus:"Line status",liftDisruptions:"Lift outages",stopDisruptions:"Station notices",crowdingReadings:"Crowding (tracked)",arrivalsReadings:"Arrivals (tracked)",arrivalsDetail:"Arrivals detail",busLineStatus:"Bus routes",networkDisruptions:"Network disruptions",crowdingNetwork:"Crowding (network)",nationalRailDepartures:"NR departure boards",nationalRailIncidents:"NR incidents",nationalRailStations:"NR stations (daily)",stationAccess:"Station access (daily)",arrivalsNetwork:"Arrivals (network)"};
+var DAILY_DS={nationalRailStations:1,stationAccess:1};
+(function(){try{var q=new URLSearchParams(location.search),k=q.get("range");if(k&&RANGES.some(function(r){return r.k===k&&!r.soon}))RG.k=k;RG.from=q.get("from");RG.to=q.get("to")}catch(e){}})();
+function ms(s){return Date.parse(s)}function iso(t){return new Date(t).toISOString().slice(0,19)+"Z"}
+function rangeObj(){return RANGES.filter(function(r){return r.k===RG.k})[0]}
+function win(){var S=window.__S||{},END=(S.meta||{}).dataThrough;if(!END)return null;var e=ms(END),s;
+ if(RG.k==="custom"&&RG.from&&RG.to){s=ms(RG.from+"T00:00:00Z");e=Math.min(e,ms(RG.to+"T23:00:00Z"));if(e<s)e=s}else s=e-((rangeObj().h||1)-1)*36e5;
+ var H=Math.round((e-s)/36e5)+1;return{s:s,e:e,H:H,ps:s-H*36e5,pe:s-36e5,label:RG.k==="custom"?(RG.from+" to "+RG.to):RG.k==="now"?"latest hour":"last "+rangeObj().l}}
+function rangeOK(r){if(r.soon)return false;if(r.k==="custom"||r.h<=48)return true;var S=window.__S||{},END=(S.meta||{}).dataThrough;if(!IDX||!IDX.firstSlot||!END)return false;return ms(END)-(r.h-1)*36e5>=ms(IDX.firstSlot)}
+function writeURL(){try{var q=new URLSearchParams(location.search);q.set("range",RG.k);if(RG.k==="custom"&&RG.from&&RG.to){q.set("from",RG.from);q.set("to",RG.to)}else{q.delete("from");q.delete("to")}history.replaceState(null,"",location.pathname+"?"+q.toString()+location.hash)}catch(e){}}
+function fetchJSON(u){return fetch(u,{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).catch(function(){return null})}
+function loadIdx(){return fetchJSON("rollups/index.json?"+Date.now()).then(function(j){IDX=j;return j})}
+function loadDays(s,e){if(!IDX)return Promise.resolve();var a=iso(s).slice(0,10),b=iso(e).slice(0,10);
+ var need=IDX.days.filter(function(d){return d>=a&&d<=b&&(!DAYS[d]||d>=IDX.last.slice(0,10)&&!DAYS[d]._fresh)});
+ return Promise.all(need.map(function(d){return fetchJSON("rollups/day/"+d+".json"+(d>=IDX.last?"?"+Date.now():"")).then(function(j){if(j){j._fresh=d>=IDX.last;DAYS[d]=j}})}))}
+var UKF=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"short",hour:"2-digit",hourCycle:"h23"}),WD={Mon:0,Tue:1,Wed:2,Thu:3,Fri:4,Sat:5,Sun:6};
+function ukDH(t){var p=UKF.formatToParts(new Date(t)),w,h;p.forEach(function(x){if(x.type==="weekday")w=WD[x.value];if(x.type==="hour")h=+x.value});return[w,h]}
+var MKEYS=["busGood","busTotal","nrDeps","nrCanc","nrLate","nrInc","nrUnpl","lifts","liftStations","notices","noticeStations"];
+function agg(s,e,heat){var A={H:0,lines:{},m:{},crowd:{},cov:{},dcov:{},b:{},bk:[],have:0},hourly=(e-s)<=47*36e5;
+ MKEYS.forEach(function(k){A.m[k]={sum:0,n:0,max:null,last:null}});
+ for(var t=s;t<=e;t+=36e5){var I=iso(t),d=I.slice(0,10),h=+I.slice(11,13),R=DAYS[d],bk=hourly?I:d;A.H++;
+  if(!A.b[bk]){A.b[bk]={good:0,open:0,nrgood:0,nropen:0,m:{}};A.bk.push(bk)}var B=A.b[bk];
+  if(!R)continue;var dh=heat?ukDH(t):null,any=false;
+  Object.keys(R.lines).forEach(function(id){var x=R.lines[id],c=x.c[h];if(c==null)return;any=true;
+   var L=A.lines[id]||(A.lines[id]={id:id,n:x.n,m:x.m,cats:[0,0,0,0,0,0],obs:0,open:0,r:{},cells:[],hm:heat?[]:null,bk:{}});
+   L.cats[c]++;L.obs++;if(c!==5){L.open++;var nr=x.m==="national-rail";if(nr){B.nropen++;if(c===0)B.nrgood++}else{B.open++;if(c===0)B.good++}
+    var lb=L.bk[bk]||(L.bk[bk]=[0,0]);lb[1]++;if(c===0)lb[0]++;
+    if(heat){var k2=dh[0]*24+dh[1];var hc=L.hm[k2]||(L.hm[k2]=[0,0]);hc[1]++;if(c!==0)hc[0]++}}
+   if(hourly)L.cells.push([I,c]);
+   Object.keys(x.r||{}).forEach(function(msg){if(x.r[msg].indexOf(h)>=0)L.r[msg]=(L.r[msg]||0)+1})});
+  if(any)A.have++;
+  MKEYS.forEach(function(k){var v=R.m[k]&&R.m[k][h];if(v==null)return;var M=A.m[k];M.sum+=v;M.n++;M.max=M.max==null?v:Math.max(M.max,v);M.last=v;var bm=B.m[k]||(B.m[k]=[0,0]);bm[0]+=v;bm[1]++});
+  Object.keys(R.crowd||{}).forEach(function(id){var v=R.crowd[id][h];if(v==null)return;var c=A.crowd[id]||(A.crowd[id]=[0,0]);c[0]+=v;c[1]++});
+  Object.keys(DS14).forEach(function(ds){var v=R.cov&&R.cov[ds];if(DAILY_DS[ds]){var dd=A.dcov[ds]||(A.dcov[ds]={});dd[d]=dd[d]||!!v}else{A.cov[ds]=(A.cov[ds]||0)+(v&&v[h]?1:0)}})}
+ return A}
+function mavg(A,k){var M=A.m[k];return M&&M.n?M.sum/M.n:null}
+function share(A,nr){var g=0,o=0;Object.keys(A.lines).forEach(function(id){var L=A.lines[id];if((L.m==="national-rail")!==nr)return;g+=L.cats[0];o+=L.open});return o?g/o:null}
+function onTime(A){var d=A.m.nrDeps.sum;return d?(d-A.m.nrCanc.sum-A.m.nrLate.sum)/d:null}
+function busShare(A){return A.m.busTotal.sum?A.m.busGood.sum/A.m.busTotal.sum:null}
+function series(A,f){return A.bk.map(function(k){var B=A.b[k];return[k,f(B)]})}
+function bm(B,k){var v=B.m[k];return v&&v[1]?v[0]/v[1]:null}
+function nowLines(nr){var N=((window.__S||{}).now||{}).lines||[],L=N.filter(function(t){return(t.mode==="national-rail")===nr});return{good:L.filter(function(t){return t.cat===0}).length,total:L.length}}
+/* tiny charts */
+function spark(pts,color){var v=pts.map(function(p){return p[1]}).filter(function(x){return x!=null});if(v.length<2)return null;var mn=Math.min.apply(null,v),mx=Math.max.apply(null,v),W=160,Hh=36,n=pts.length,d="",a="";
+ pts.forEach(function(p,i){if(p[1]==null)return;var x=n>1?i/(n-1)*W:0,y=Hh-3-(mx>mn?(p[1]-mn)/(mx-mn):.5)*(Hh-6);d+=(d?"L":"M")+x.toFixed(1)+" "+y.toFixed(1)});
+ return sv("svg",{class:"spk",viewBox:"0 0 "+W+" "+Hh,preserveAspectRatio:"none","aria-hidden":"true"},[sv("path",{d:d+"",fill:"none",stroke:color||"var(--accent)","stroke-width":"2","vector-effect":"non-scaling-stroke","stroke-linejoin":"round"})])}
+function segBar(cats){var t=cats.reduce(function(a,b,i){return i===5?a:a+b},0);if(!t)return null;return el("div",{class:"seg"},cats.slice(0,5).map(function(n,i){return n?el("i",{style:"width:"+(n/t*100)+"%;background:var(--c"+i+")",title:CATS[i]+": "+n+" h"}):null}))}
+function gauge(f,color){var a=Math.PI*(1-Math.max(0,Math.min(1,f||0))),x=50+40*Math.cos(a),y=50-40*Math.sin(a);
+ return sv("svg",{class:"gauge",viewBox:"0 0 100 56","aria-hidden":"true"},[sv("path",{d:"M10 50A40 40 0 0 1 90 50",fill:"none",stroke:"var(--cm)","stroke-width":"10","stroke-linecap":"round"}),sv("path",{d:"M10 50A40 40 0 0 1 "+x.toFixed(2)+" "+y.toFixed(2),fill:"none",stroke:color,"stroke-width":"10","stroke-linecap":"round"})])}
+function miniBars(rows,fmt){var mx=Math.max.apply(null,rows.map(function(r){return r.v}).concat([1]));return el("div",{class:"mb"},rows.map(function(r){return el("div",{class:"mbr"},[el("span",{class:"mbn"},[r.n]),el("span",{class:"mbt"},[el("i",{style:"width:"+(r.v/mx*100)+"%;background:"+(r.c||"var(--accent)")})]),el("span",{class:"mbv"},[fmt(r.v)])])}))}
+function bkLabel(k){return k.length>10?new Date(k).toLocaleString("en-GB",{weekday:"short",hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"}):fmtDay(k)}
+function trend(pts,o){o=o||{};var v=pts.filter(function(p){return p[1]!=null});if(!v.length)return el("p",{class:"small"},["No readings in this range."]);
+ var W=720,Hh=170,P=40,mx=o.max!=null?o.max:Math.max.apply(null,v.map(function(p){return p[1]}).concat([1])),mn=o.min||0,n=pts.length,bw=(W-P)/n,kids=[];
+ [0,.5,1].forEach(function(f){var y=Hh-18-f*(Hh-34);kids.push(sv("line",{x1:P,x2:W,y1:y,y2:y,class:"gl"}));var t=sv("text",{x:P-4,y:y+3,"text-anchor":"end"});t.textContent=o.fmt?o.fmt(mn+f*(mx-mn)):Math.round(mn+f*(mx-mn));kids.push(t)});
+ pts.forEach(function(p,i){if(p[1]==null)return;var hgt=Math.max(1,(p[1]-mn)/((mx-mn)||1)*(Hh-34)),r=sv("rect",{x:(P+i*bw+bw*.12).toFixed(1),y:(Hh-18-hgt).toFixed(1),width:Math.max(1,bw*.76).toFixed(1),height:hgt.toFixed(1),rx:Math.min(3,bw/3).toFixed(1),fill:o.color?o.color(p[1]):"var(--accent)"});var ti=sv("title");ti.textContent=bkLabel(p[0])+": "+(o.fmt?o.fmt(p[1]):p[1]);r.appendChild(ti);kids.push(r)});
+ [0,n-1].forEach(function(i,j){if(n<2&&j)return;var t=sv("text",{x:j?W:P,y:Hh-4,"text-anchor":j?"end":"start"});t.textContent=bkLabel(pts[i][0]);kids.push(t)});
+ return sv("svg",{class:"trend",viewBox:"0 0 "+W+" "+Hh,role:"img","aria-label":o.label||"Trend"},kids)}
+function goodCol(f){return f==null?"var(--cm)":f>=.9?"var(--c0)":f>=.7?"var(--c1)":f>=.5?"var(--c2)":"var(--c4)"}
+function pc(f,d){return f==null?"–":(f*100).toFixed(d==null?1:d)+"%"}
+function nf(v,d){return v==null?"–":(Math.round(v*Math.pow(10,d||0))/Math.pow(10,d||0)).toLocaleString("en-GB")}
+function deltaEl(cur,prev,better,fmt){if(cur==null||prev==null)return null;var d=cur-prev;if(Math.abs(d)<1e-9)return el("span",{class:"dl"},["no change vs previous period"]);
+ var good=better==="up"?d>0:d<0;return el("span",{class:"dl "+(good?"up":"dn")},[(d>0?"▲ ":"▼ ")+fmt(Math.abs(d))+" vs previous period"])}
+/* drill panel shell (same look as the Now panels) */
+function panel(title,eb,tone,body,close){var x=el("button",{class:"lp-x",type:"button","aria-label":"Close details"},["×"]);x.addEventListener("click",close);
+ var col={good:"var(--c0)",warn:"var(--c1)",bad:"var(--c4)"}[tone]||"var(--accent)";
+ return el("div",{class:"lp"},[el("div",{class:"lp-hd"+(tone==="warn"?" dk":""),style:"--lc:"+col},[x,el("div",{class:"lp-eb"},[eb]),el("div",{class:"lp-tt"},[title])]),el("div",{class:"lp-bd"},body)])}
+function rankRows(A,nr,onPick){var L=Object.keys(A.lines).map(function(k){return A.lines[k]}).filter(function(l){return(l.m==="national-rail")===nr&&l.open});
+ L.sort(function(a,b){return a.cats[0]/a.open-b.cats[0]/b.open});
+ return el("div",{class:"rk"},L.map(function(l){var f=l.cats[0]/l.open,r=el("button",{class:"rkr",type:"button"},[el("span",{class:"rkn"},[l.n]),segBar(l.cats)||el("span"),el("span",{class:"rkv"},[pc(f,0)])]);r.addEventListener("click",function(){onPick(l.id)});return r}))}
+/* ---------- Observations: insight cards ---------- */
+function obsSection(S){var host=el("div",{class:"obs ins-grid",id:"obs-host"},[el("div",{class:"card small"},["Loading the record for this range…"])]);
+ return sec("observations","Observations","Computed from the record on every run; no AI involved. Use the time bar above to change the period; tap a card for the detail.",[host])}
+function insCard(c,grid,i){var b=el("button",{class:"card ob ins "+(c.tone||"neutral"),type:"button","aria-expanded":"false"},[
+  el("div",{class:"ins-top"},[el("div",null,[el("div",{class:"eb"},[c.eb]),el("div",{class:"v"},[c.big,c.unit?el("small",null,[c.unit]):null]),el("div",{class:"lb"},[c.sub])]),c.viz&&!c.below?el("div",{class:"ins-viz"},[c.viz]):null]),c.viz&&c.below?el("div",{class:"ins-below"},[c.viz]):null,
+  c.delta||null,c.text?el("p",null,[c.text]):null,c.chip?el("span",{class:"chip nowchip"},[c.chip]):null,el("div",{class:"go"},[c.drill?"Details ↓":"Explore →"])]);
+ b.addEventListener("click",function(){var open=grid.querySelector(".lp");if(open)open.remove();grid.querySelectorAll(".ins").forEach(function(x){x.setAttribute("aria-expanded","false")});
+  if(OSEL===c.key){OSEL=null;return}if(!c.drill){OSEL=null;location.hash=c.href||"#now";return}
+  OSEL=c.key;b.setAttribute("aria-expanded","true");var p=panel(c.title||c.eb,c.peb||RS.w.label,c.tone,c.drill(),function(){p.remove();b.setAttribute("aria-expanded","false");OSEL=null;b.focus()});b.insertAdjacentElement("afterend",p)});
+ return b}
+function obsCards(){var S=window.__S||{},w=RS.w,A=RS.cur,P=RS.prev,C=RS.ctx,isNow=RG.k==="now",per=isNow?"previous hour":"previous period",cards=[];
+ var dpp=function(v){return(v*100).toFixed(1)+" pts"},pickLine=function(id){LSEL=id;var s=document.getElementById("lines");if(s)s.scrollIntoView({behavior:"smooth"});drawLines()};
+ function lineCard(nr){var sh=share(A,nr),ps=share(P,nr),n=nowLines(nr);if(sh==null&&!n.total)return;
+  var cats=[0,0,0,0,0,0];Object.keys(A.lines).forEach(function(k){var l=A.lines[k];if((l.m==="national-rail")===nr)l.cats.forEach(function(v,i){cats[i]+=v})});
+  cards.push({key:nr?"nr":"tfl",eb:nr?"National Rail operators":"TfL lines",tone:sh==null?"neutral":sh>=.9?"good":sh>=.7?"warn":"bad",
+   big:isNow?String(n.good):pc(sh,0),unit:isNow?" / "+n.total:"",sub:isNow?"with good service now":"of open line-hours had good service",
+   viz:isNow?donut(n.total?n.good/n.total:0,"var(--c0)"):segBar(cats),delta:deltaEl(sh,ps,"up",dpp),
+   text:isNow?null:Object.keys(A.lines).filter(function(k){return(A.lines[k].m==="national-rail")===nr}).length+" "+(nr?"operators":"lines")+" in the record for this range.",
+   drill:function(){return[el("div",{class:"dsub"},["Network good service, "+w.label]),trend(series(isNow?C:A,function(B){var o=nr?B.nropen:B.open;return o?(nr?B.nrgood:B.good)/o*100:null}),{max:100,fmt:function(v){return Math.round(v)+"%"},color:function(v){return goodCol(v/100)},label:"Good service share"}),
+    el("div",{class:"dsub"},["Every "+(nr?"operator":"line")+", worst first (tap for its messages)"]),rankRows(isNow?C:A,nr,pickLine)]}})}
+ lineCard(false);lineCard(true);
+ var bs=busShare(A);if(bs!=null)cards.push({key:"bus",eb:"Buses",tone:bs>=.8?"neutral":"warn",big:isNow?nf(A.m.busGood.last):pc(bs,0),unit:isNow?" / "+nf(A.m.busTotal.last):"",sub:isNow?"routes with good service now":"of route-hours with good service",
+  viz:donut(bs,"var(--accent)"),delta:deltaEl(bs,busShare(P),"up",dpp),drill:function(){return[el("div",{class:"dsub"},["Share of bus routes with good service"]),trend(series(isNow?C:A,function(B){var g=bm(B,"busGood"),t=bm(B,"busTotal");return t?g/t*100:null}),{min:50,max:100,fmt:function(v){return Math.round(v)+"%"}}),el("p",{class:"small"},["Route-by-route detail with TfL's reasons arrives in the Buses section (phase 2)."])]}});
+ var ot=onTime(A);if(ot!=null)cards.push({key:"nrb",eb:"National Rail departures",tone:ot>=.9?"good":ot>=.8?"warn":"bad",big:pc(ot,0),unit:" on time",sub:nf(A.m.nrDeps.sum)+" departures on "+(isNow?"the latest boards":"hourly boards")+" at 33 stations",
+  viz:gauge(ot,goodCol(ot)),delta:deltaEl(ot,onTime(P),"up",dpp),text:nf(A.m.nrCanc.sum)+" cancelled, "+nf(A.m.nrLate.sum)+" expected 5+ min late.",
+  drill:function(){var X=isNow?C:A;return[el("div",{class:"dsub"},["On time (not cancelled, under 5 min late)"]),trend(series(X,function(B){var d=bm(B,"nrDeps");return d?(d-(bm(B,"nrCanc")||0)-(bm(B,"nrLate")||0))/d*100:null}),{min:50,max:100,fmt:function(v){return Math.round(v)+"%"},color:function(v){return goodCol(v/100)}}),
+   el("div",{class:"dsub"},["Cancellations per board"]),trend(series(X,function(B){return bm(B,"nrCanc")}),{color:function(){return"var(--c4)"}}),el("p",{class:"small"},["Station-by-station punctuality and train loading arrive in the National Rail section (phase 2)."])]}});
+ var ni=mavg(A,"nrInc");if(ni!=null){var nu=mavg(A,"nrUnpl");cards.push({key:"nri",eb:"National Rail incidents",tone:nu>0?"warn":"neutral",big:nf(isNow?A.m.nrInc.last:ni),unit:isNow?"":" avg",sub:"incidents and engineering works listed",
+  below:1,viz:miniBars([{n:"Planned",v:ni-nu,c:"var(--c3)"},{n:"Unplanned",v:nu,c:"var(--c4)"}],function(v){return nf(v)}),delta:deltaEl(nu,mavg(P,"nrUnpl"),"down",function(v){return nf(v,1)+" unplanned"}),
+  drill:function(){return[el("div",{class:"dsub"},["Unplanned incidents listed"]),trend(series(isNow?C:A,function(B){return bm(B,"nrUnpl")}),{color:function(){return"var(--c4)"}}),el("p",{class:"small"},["Each operator's notice, in words, is on its tile in the Now section."])]}})}
+ var tl=Object.keys(A.lines).map(function(k){return A.lines[k]}).filter(function(l){return l.m!=="national-rail"&&l.open>=Math.max(1,w.H/4)});tl.sort(function(a,b){return a.cats[0]/a.open-b.cats[0]/b.open});
+ if(tl.length&&!isNow){var wl=tl[0],wf=wl.cats[0]/wl.open;cards.push({key:"worst",eb:"Most disrupted TfL line",tone:wf<.7?"bad":"warn",big:wl.n,sub:pc(wf,0)+" good service, "+w.label,
+  below:1,viz:miniBars(tl.slice(0,5).map(function(l){return{n:l.n,v:100-l.cats[0]/l.open*100,c:"var(--c4)"}}),function(v){return Math.round(v)+"%"}),text:"Bars show the share of open hours not in good service.",drill:null,href:"#lines",
+  _pick:wl.id})}
+ var lo=mavg(A,"lifts");if(lo!=null)cards.push({key:"lifts",eb:"Lifts out of service",tone:"neutral",big:isNow?nf(A.m.lifts.last):nf(lo,1),unit:isNow?"":" avg",sub:isNow?"lifts out at "+nf(A.m.liftStations.last)+" stations":"lifts out per hour (peak "+nf(A.m.lifts.max)+")",
+  viz:spark(series(C&&isNow?C:A,function(B){return bm(B,"lifts")}),"var(--c2)"),delta:deltaEl(lo,mavg(P,"lifts"),"down",function(v){return nf(v,1)+" lifts"}),
+  drill:function(){return[el("div",{class:"dsub"},["Lifts out of service"]),trend(series(isNow?C:A,function(B){return bm(B,"lifts")}),{color:function(){return"var(--c2)"}}),el("p",{class:"small"},["Station-by-station outages and step-free status are in the Lifts section."])]}});
+ var no=mavg(A,"notices");if(no!=null)cards.push({key:"notices",eb:"Station notices",tone:"neutral",big:isNow?nf(A.m.notices.last):nf(no,1),unit:isNow?"":" avg",sub:isNow?"notices at "+nf(A.m.noticeStations.last)+" watched stations":"active notices per hour",
+  viz:spark(series(isNow?C:A,function(B){return bm(B,"notices")}),"var(--c1)"),delta:deltaEl(no,mavg(P,"notices"),"down",function(v){return nf(v,1)}),
+  drill:function(){return[el("div",{class:"dsub"},["Active station notices"]),trend(series(isNow?C:A,function(B){return bm(B,"notices")}),{color:function(){return"var(--c1)"}})]}});
+ var cs=(S.crowding||{}).stations||{},cr=Object.keys(A.crowd).map(function(id){var c=A.crowd[id];return{id:id,n:(cs[id]||{}).name||id,v:c[0]/c[1]}}).sort(function(a,b){return b.v-a.v});
+ if(cr.length)cards.push({key:"crowd",eb:"Busiest tracked station",tone:"neutral",big:cr[0].n,sub:Math.round(cr[0].v)+"% of its normal level on average, "+w.label,below:1,viz:miniBars(cr.slice(0,5).map(function(r){return{n:r.n,v:r.v}}),function(v){return Math.round(v)+"%"}),
+  drill:function(){return[el("div",{class:"dsub"},["Average crowding as % of each station's normal level, "+w.label]),miniBars(cr.slice(0,15).map(function(r){return{n:r.n,v:r.v}}),function(v){return Math.round(v)+"%"}),el("p",{class:"small"},["Tap a station in the Crowding section for its hour-by-hour profile."])]}});
+ var today=iso(w.e).slice(0,10),cov=Object.keys(DS14).map(function(ds){var f=IDX.covFirst&&IDX.covFirst[ds];if(!f||ms(f)>w.e)return{ds:ds,v:null};var from=Math.max(w.s,ms(f));
+  if(DAILY_DS[ds]){var dd=A.dcov[ds]||{},ex=Object.keys(dd).filter(function(k){return k>=f.slice(0,10)&&(k<today||dd[k])});return{ds:ds,v:ex.length?ex.filter(function(k){return dd[k]}).length/ex.length:null}}
+  var cnt=0;for(var t=from;t<=w.e;t+=36e5){var I=iso(t),R=DAYS[I.slice(0,10)],v=R&&R.cov&&R.cov[ds];if(v&&v[+I.slice(11,13)])cnt++}return{ds:ds,v:cnt/(Math.round((w.e-from)/36e5)+1)}}).filter(function(x){return x.v!=null});
+ var started=cov.filter(function(x){return x.v>0}),worst=started.reduce(function(a,b){return!a||b.v<a.v?b:a},null);
+ if(worst)cards.push({key:"health",eb:"Data health",tone:worst.v>=.999?"good":worst.v>=.9?"warn":"bad",big:pc(worst.v,worst.v>=.999?0:1),sub:"hours recorded, worst of "+started.length+" datasets, "+w.label,
+  viz:el("div",{class:"dots"},cov.map(function(x){return el("i",{style:"background:"+(x.v>=.999?"var(--c0)":x.v>=.9?"var(--c1)":x.v>0?"var(--c4)":"var(--cm)"),title:DS14[x.ds]+": "+pc(x.v)})})),
+  text:(worst.v>=.999?"Every dataset recorded every hour in this range (counted from when each dataset began).":"Lowest: "+DS14[worst.ds]+". Counted from when each dataset began.")+(w.s<ms("2026-10-24T21:00:00Z")?" Before go-live (24 Oct, 21:00 UK) the old collector skipped some hours and did not collect buses from 1 to 24 Oct.":""),
+  drill:function(){return[el("div",{class:"dsub"},["Share of hours recorded per dataset, "+w.label]),miniBars(cov.map(function(x){return{n:DS14[x.ds],v:x.v*100,c:x.v>=.999?"var(--c0)":x.v>=.9?"var(--c1)":"var(--c4)"}}),function(v){return v.toFixed(v>=99.95?0:1)+"%"})]}});
+ (S.observations||[]).filter(function(o){return o.key==="liftStoplight"||o.key==="longestLift"}).forEach(function(o){cards.push({key:o.key,eb:o.key==="liftStoplight"?"Step-free access":"Longest lift outage",tone:o.tone,big:o.value,sub:o.label,text:o.text,chip:isNow?null:"Now",href:"#lifts",drill:null})});
+ return cards}
+function drawObs(){var host=document.getElementById("obs-host");if(!host||!RS)return;host.innerHTML="";var cards;try{cards=obsCards()}catch(e){host.appendChild(el("div",{class:"err"},["Could not compute this range: "+e.message]));return}
+ cards.forEach(function(c,i){var b=insCard(c,host,i);if(c._pick)b.addEventListener("click",function(){LSEL=c._pick;drawLines()});host.appendChild(b)});
+ if(OSEL){var bb=[].slice.call(host.querySelectorAll(".ins"))[cards.map(function(c){return c.key}).indexOf(OSEL)];if(bb&&cards.filter(function(c){return c.key===OSEL})[0].drill){var k=OSEL;OSEL=null;bb.click()}else OSEL=null}}
+/* ---------- Lines explorer ---------- */
+var LF={mode:"all",q:"",sort:"worst"};
+var MODE_SHORT={tube:"Tube",overground:"Overground",dlr:"DLR","elizabeth-line":"Elizabeth line",tram:"Tram","river-bus":"River","cable-car":"Cable car","national-rail":"National Rail"};
+function linesSection(S){var host=el("div",{id:"lines-host"},[]);try{host.appendChild(lines(S))}catch(e){}
+ return el("section",{id:"lines"},[el("h2",null,["Lines"]),el("p",{class:"lede"},["Every TfL line and National Rail operator for the chosen range: good-service share, how it compares with the previous period, and the messages behind each disruption."]),host])}
+function lineDrill(L,A,w){var f=L.open?L.cats[0]/L.open:null,kids=[];
+ kids.push(el("div",{class:"kp"},[["Good service",pc(f,0)],["Disrupted hours",nf(L.open-L.cats[0])],["Closed (night)",nf(L.cats[5])+" h"],["Hours recorded",nf(L.obs)+" / "+nf(w.H)]].map(function(x){return el("div",{class:"kpc"},[el("b",null,[x[1]]),el("span",null,[x[0]])])})));
+ if(L.cells.length){kids.push(el("div",{class:"dsub"},["Hour by hour"]));var st=el("div",{class:"hstrip",style:"grid-template-columns:repeat("+Math.max(L.cells.length,1)+",1fr)"},L.cells.map(function(c){return el("i",{style:"background:var(--c"+c[1]+")",title:bkLabel(c[0])+": "+CATS[c[1]]})}));kids.push(st)}
+ else{kids.push(el("div",{class:"dsub"},["Good service by day"]));kids.push(trend(A.bk.map(function(k){var b=L.bk[k];return[k,b&&b[1]?b[0]/b[1]*100:null]}),{max:100,fmt:function(v){return Math.round(v)+"%"},color:function(v){return goodCol(v/100)}}))}
+ if(L.hm&&w.H>=168){kids.push(el("div",{class:"dsub"},["When it is disrupted (UK time): share of hours not in good service"]));var g=el("div",{class:"heat"});["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(function(dn,d){g.appendChild(el("span",{class:"hl"},[dn]));for(var h=0;h<24;h++){var c=L.hm[d*24+h],v=c&&c[1]?c[0]/c[1]:null;g.appendChild(el("i",{style:v==null?"":"background:color-mix(in srgb,var(--c4) "+Math.round(8+v*92)+"%,var(--card))",title:dn+" "+String(h).padStart(2,"0")+":00 · "+(v==null?"no readings":Math.round(v*100)+"% disrupted")}))}});
+  g.appendChild(el("span"));for(var h2=0;h2<24;h2++)g.appendChild(el("span",{class:"hx"},[h2%6===0?String(h2).padStart(2,"0"):""]));kids.push(g)}
+ var R=Object.keys(L.r).map(function(k){return[k,L.r[k]]}).sort(function(a,b){return b[1]-a[1]});
+ kids.push(el("div",{class:"dsub"},[R.length?"What TfL / National Rail said, by hours in force":"No disruption messages in this range"]));
+ if(R.length)kids.push(el("div",{class:"msgs"},R.slice(0,10).map(function(r){return el("div",{class:"msg"},[el("span",{class:"mh"},[r[1]+" h"]),el("span",null,[r[0]])])})));
+ return kids}
+function drawLines(){var host=document.getElementById("lines-host");if(!host||!RS)return;var A=RG.k==="now"?RS.ctx:RS.cur,P=RG.k==="now"?RS.ctxPrev:RS.prev,w=RG.k==="now"?RS.cw:RS.w;host.innerHTML="";
+ var all=Object.keys(A.lines).map(function(k){var L=A.lines[k],p=P.lines[k];L.f=L.open?L.cats[0]/L.open:null;L.pf=p&&p.open?p.cats[0]/p.open:null;return L});
+ var modes=["all"].concat(Object.keys(MODE_SHORT).filter(function(m){return all.some(function(l){return l.m===m})}));
+ var chips=el("div",{class:"fchips",role:"group","aria-label":"Filter by mode"},modes.map(function(m){var b=el("button",{type:"button",class:"fchip"+(LF.mode===m?" on":""),"aria-pressed":String(LF.mode===m)},[m==="all"?"All":MODE_SHORT[m]]);b.addEventListener("click",function(){LF.mode=m;drawLines()});return b}));
+ var q=el("input",{type:"search",placeholder:"Search lines or operators…","aria-label":"Search lines",value:LF.q});q.addEventListener("input",function(){LF.q=q.value;paint()});
+ var so=el("select",{"aria-label":"Sort lines"},[["worst","Most disrupted first"],["best","Best first"],["change","Biggest change"],["name","A–Z"]].map(function(o){var x=el("option",{value:o[0]},[o[1]]);if(LF.sort===o[0])x.selected=true;return x}));so.addEventListener("change",function(){LF.sort=so.value;paint()});
+ var list=el("div",{class:"lx"});
+ host.appendChild(el("div",{class:"ftools"},[chips,el("div",{class:"frow"},[q,so])]));
+ host.appendChild(el("div",{class:"small",style:"margin:4px 0 10px"},[(RG.k==="now"?"Now shows the last 24 hours. ":"")+"Range: "+w.label+" · bars show hours by status while open (overnight closures excluded)."]));host.appendChild(list);
+ function paint(){list.innerHTML="";var qq=LF.q.trim().toLowerCase(),L=all.filter(function(l){return(LF.mode==="all"||l.m===LF.mode)&&(!qq||l.n.toLowerCase().indexOf(qq)>=0)&&l.open});
+  var key={worst:function(a,b){return a.f-b.f},best:function(a,b){return b.f-a.f},change:function(a,b){return Math.abs(b.pf==null?0:b.f-b.pf)-Math.abs(a.pf==null?0:a.f-a.pf)},name:function(a,b){return a.n.localeCompare(b.n)}}[LF.sort];L.sort(key);
+  if(!L.length)list.appendChild(el("p",{class:"small"},["No lines match."]));
+  L.forEach(function(l){var d=l.pf==null?null:l.f-l.pf,r=el("button",{class:"lxr",type:"button","aria-expanded":String(LSEL===l.id)},[el("span",{class:"lxn"},[l.n,el("small",null,[MODE_SHORT[l.m]||l.m||""])]),segBar(l.cats)||el("span"),el("span",{class:"lxv"},[pc(l.f,0)]),el("span",{class:"lxd "+(d==null||Math.abs(d)<.005?"":d>0?"up":"dn")},[d==null||Math.abs(d)<.005?"–":(d>0?"▲":"▼")+Math.round(Math.abs(d)*100)])]);
+   r.addEventListener("click",function(){LSEL=LSEL===l.id?null:l.id;paint()});list.appendChild(r);
+   if(LSEL===l.id){var p=panel(l.n,(MODE_SHORT[l.m]||"")+" · "+w.label,l.f>=.9?"good":l.f>=.7?"warn":"bad",lineDrill(l,A,w),function(){LSEL=null;paint()});list.appendChild(p);setTimeout(function(){if(p.scrollIntoView)p.scrollIntoView({block:"nearest"})},0)}})}
+ paint()}
+/* ---------- time bar + section chips ---------- */
+function drawBar(){var bar=document.getElementById("tbar");if(!bar)return;bar.innerHTML="";
+ RANGES.forEach(function(r){var ok=rangeOK(r),b=el("button",{type:"button",class:"tb"+(RG.k===r.k?" on":""),"aria-pressed":String(RG.k===r.k)},[r.l]);
+  if(!ok){b.disabled=true;b.title=r.soon?"Planned works for the coming week: coming soon (phase 3)":"History starts "+(IDX&&IDX.first?fmtDay(IDX.first):"15 Sep")+"; this range switches on as the record grows"}
+  b.addEventListener("click",function(){RG.k=r.k;if(r.k==="custom"&&!(RG.from&&RG.to)&&IDX){RG.to=IDX.last;RG.from=IDX.days[Math.max(0,IDX.days.length-7)]}writeURL();refreshRange()});bar.appendChild(b)});
+ if(RG.k==="custom"&&IDX){var mk=function(v,f){var i=el("input",{type:"date",value:v||"",min:IDX.first,max:IDX.last,"aria-label":f?"From date":"To date"});i.addEventListener("change",function(){if(f)RG.from=i.value;else RG.to=i.value;if(RG.from&&RG.to){writeURL();refreshRange()}});return i};
+  bar.appendChild(el("span",{class:"tbc"},[mk(RG.from,1),el("span",null,["to"]),mk(RG.to,0)]))}
+ var w=win();bar.appendChild(el("span",{class:"tbl"},[w?(RG.k==="now"?"Latest hour: "+fmtSlot(iso(w.e)):fmtSlot(iso(w.s))+" → "+fmtSlot(iso(w.e))):""]))}
+function drawChips(){NOW_ONLY.forEach(function(id){var s=document.getElementById(id);if(!s)return;var h=s.querySelector("h2");if(!h)return;var c=h.querySelector(".nowchip");if(RG.k==="now"){if(c)c.remove();return}
+ if(!c){c=el("span",{class:"chip nowchip",title:"This section shows the latest reading; time ranges for it are on the way"},["Now only"]);h.appendChild(c)}})}
+function refreshRange(){var w=win();drawBar();drawChips();if(!w)return;
+ var ctxS=w.e-23*36e5,need0=Math.min(w.ps,ctxS-24*36e5);
+ return (IDX?Promise.resolve(IDX):loadIdx()).then(function(){if(!IDX){var h=document.getElementById("obs-host");if(h)h.innerHTML="";var S=window.__S;if(h&&S)h.parentNode.replaceChild(observations(S).querySelector(".obs")||el("div"),h);return}
+  drawBar();if(!rangeOK(rangeObj())){RG.k="now";writeURL();return refreshRange()}
+  return loadDays(need0,w.e).then(function(){var heat=w.H>=168;RS={w:w,cur:agg(w.s,w.e,heat),prev:agg(w.ps,w.pe,false),ctx:agg(ctxS,w.e,false),ctxPrev:agg(ctxS-24*36e5,ctxS-36e5,false),cw:{s:ctxS,e:w.e,H:24,label:"last 24 h"}};drawObs();drawLines()})})}
+function rangeReload(){Object.keys(DAYS).forEach(function(d){if(DAYS[d]._fresh)delete DAYS[d]});IDX=null;refreshRange()}
+
 function render(S){
  window.__S=S;
  var app=$("#app");app.innerHTML="";
@@ -451,7 +674,8 @@ function render(S){
  var cov=S.coverage&&S.coverage.lineStatus;
  try{app.appendChild(glance(S))}catch(e){app.appendChild(el("div",{class:"err"},["Could not draw the glance row: "+e.message]))}
  app.appendChild(el("div",{class:"grid kpis"},[kpi(num(recs),"readings stored"),kpi(cov?pct(cov.pct):"-","line-status hours captured"),kpi(S.lifts&&S.lifts.current?S.lifts.current.lifts:"-","lifts out now"),kpi(cov?String(Math.round((new Date(cov.last)-new Date(cov.first))/864e5)):"-","days of history")]));
- [nowBoard,observations,health,lines,lifts,stations,crowding,arrivals].forEach(function(f){try{app.appendChild(f(S))}catch(e){app.appendChild(el("div",{class:"err"},["Could not draw a section: "+e.message]))}});
+ [nowBoard,obsSection,health,linesSection,lifts,stations,crowding,arrivals].forEach(function(f){try{app.appendChild(f(S))}catch(e){app.appendChild(el("div",{class:"err"},["Could not draw a section: "+e.message]))}});
+ try{rangeReload()}catch(e){}
  if(SEL)openCrowd(SEL.id,SEL.kind)}
 
 function fail(msg){$("#stamp").textContent="Data unavailable";$("#app").innerHTML="";$("#app").appendChild(el("div",{class:"err",style:"margin-top:18px"},[msg]))}

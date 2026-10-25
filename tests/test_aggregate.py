@@ -120,6 +120,14 @@ class LineDetailsTests(unittest.TestCase):
         self.assertEqual(det[0]["link"], "https://www.nationalrail.co.uk/x/")
 
 
+class TextTests(unittest.TestCase):
+    def test_uk_time_and_lift_label(self):
+        self.assertEqual(aggregate.uk_time("2026-10-25T07:01:13Z"), "25 Oct 07:01 UK")   # after clocks went back
+        self.assertEqual(aggregate.uk_time("2026-09-30T10:00:00Z"), "30 Sep 11:00 UK")   # BST
+        self.assertEqual(aggregate.lift_label("HUBEPH-Lift-5"), " (TfL lift 5)")
+        self.assertEqual(aggregate.lift_label(None), "")
+
+
 class HistoryTests(unittest.TestCase):
     def test_last_24_hours(self):
         LS = {"2026-10-25T08:00:00Z": {"lines": [{"id": "circle", "statuses": [{"severity": 5, "description": "Part Closure"}]}]},

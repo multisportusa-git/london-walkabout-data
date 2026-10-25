@@ -80,6 +80,16 @@ def line_worst(sts):
     best = max(sts, key=lambda t: (cat_of(t[1]) if cat_of(t[1]) != 5 else 5, -t[1]))
     return cat_of(best[1]), best[0]
 
+def uk_time(s):
+    """ISO timestamp -> '25 Oct 08:01 UK' (Europe/London)."""
+    try:
+        return pts(s).astimezone(LON).strftime("%-d %b %H:%M") + " UK"
+    except Exception:
+        return str(s)[:16]
+def lift_label(lift_id):
+    """'HUBEPH-Lift-5' -> ' (TfL lift 5)'; TfL publishes no friendlier lift names."""
+    m = re.search(r"Lift-?(\w+)$", str(lift_id or ""))
+    return f" (TfL lift {m.group(1)})" if m else ""
 def title(s): return " ".join(w.capitalize() for w in re.split(r"[-\s]+", s))
 def cover(by, first, last_global):
     slots = sorted(by);
@@ -283,7 +293,7 @@ def now_and_observations(D, S, last_global, cutoff7, data_dir="data"):
     if bus and bus.get("totalLines"):
         n, tot = len(bus.get("disrupted") or []), bus["totalLines"]
         obs.append(dict(key="bus", tone="warn" if n > tot * 0.2 else "neutral", value=f"{tot - n}/{tot}", label="bus routes with good service now",
-                        text=f"{n} routes have diversions, special service or delays (latest reading {str(bus.get('polledAt'))[:16]} UTC)."))
+                        text=f"{n} routes have diversions, special service or delays (latest reading {uk_time(str(bus.get('polledAt')))})."))
     nr = latest_record(data_dir, "nationalRailDepartures")
     if nr and isinstance(nr.get("stations"), dict) and nr.get("fields"):
         F = nr["fields"]; ix = {f: F.index(f) for f in ("std", "etd", "isCancelled") if f in F}
@@ -308,7 +318,7 @@ def now_and_observations(D, S, last_global, cutoff7, data_dir="data"):
         unplanned = ki["count"] - (ki.get("planned") or 0)
         obs.append(dict(key="nationalRailIncidents", tone="warn" if unplanned > 0 else "neutral", value=str(ki["count"]),
                         label="National Rail incidents and engineering works listed",
-                        text=f"{ki.get('planned') or 0} planned, {unplanned} unplanned; Southeastern {bo.get('SE', 0)}, Thameslink {bo.get('TL', 0)} (feed read {str(ki.get('polledAt'))[:16]} UTC)."))
+                        text=f"{ki.get('planned') or 0} planned, {unplanned} unplanned; Southeastern {bo.get('SE', 0)}, Thameslink {bo.get('TL', 0)} (feed read {uk_time(str(ki.get('polledAt')))})."))
     L = (S.get("lines") or {}).get("list") or []
     l7 =[l for l in L if l.get("good7dPct") is not None and l.get("slots", 0) >= 24]  # need a day of readings to rank
     if l7:
@@ -334,8 +344,8 @@ def now_and_observations(D, S, last_global, cutoff7, data_dir="data"):
         ongoing = [x for x in F.get("longest") or [] if x.get("ongoing")]
         if ongoing:
             x = ongoing[0]; days = x["hours"] / 24
-            obs.append(dict(key="longestLift", tone="bad" if days >= 7 else "warn", value=(f"{days:.1f} d" if days >= 2 else f"{x['hours']} h"),
-                            label="longest lift outage still open", text=f"Lift {x['lift']} at {x['station']} has been out since {x['start'][:10]}."))
+            obs.append(dict(key="longestLift", tone="bad" if days >= 7 else "warn", value=(f"{days:.0f} days" if days >= 2 else f"{x['hours']} h"),
+                            label="longest lift outage still open", text=f"A lift at {x['station']}{lift_label(x['lift'])} has been out of service since {uk_time(x['start'])[:-9].strip()}."))
     T = S.get("stops") or {}
     if T.get("current"):
         c, avg = T["current"]["disruptions"], T.get("avgActive") or 0
@@ -354,7 +364,7 @@ def now_and_observations(D, S, last_global, cutoff7, data_dir="data"):
     worst = min(cov24.values()) if cov24 else 0
     obs.append(dict(key="health", tone="good" if worst == 24 else ("warn" if worst >= 20 else "bad"), value=f"{worst}/24",
                     label="hours recorded, last 24 h (worst dataset)",
-                    text="All five datasets recorded every hour in the last day." if worst == 24 else
+                    text=f"All {len(DATASETS)} core datasets recorded every hour in the last day." if worst == 24 else
                     "Missing hours in the last day: " + ", ".join(f"{ds} {24 - n}" for ds, n in cov24.items() if n < 24) + "."))
     return now_board, obs
 
@@ -799,5 +809,24 @@ def main():
         s = max(CR); L["crowdingReadings"]["stations"] = {k: r1(100 * v["percentageOfBaseline"]) for k, v in station_map(CR[s]).items() if isinstance(v, dict) and isinstance(v.get("percentageOfBaseline"), (int, float))}
     with open(os.path.join(a.out, "latest.json"), "w", encoding="utf-8") as fh: json.dump(L, fh, separators=(",", ":"), ensure_ascii=False)
     print(f"wrote {out} ({os.path.getsize(out)} bytes), latest.json; dataThrough={last_global}")
+    publish_rollups(a.data, a.out)
+
+
+def publish_rollups(data_dir, out_dir):
+    """Bring day rollups up to date (normally already done by the collect step) and copy them to the site.
+    The page sums the days a chosen time range covers. A failure here never affects the rest of the site."""
+    try:
+        import shutil, rollup
+        rollup.update(data_dir)
+        src, dst = os.path.join(data_dir, "_rollup", "day"), os.path.join(out_dir, "rollups", "day")
+        os.makedirs(dst, exist_ok=True)
+        for f in os.listdir(src):
+            if f.endswith(".json"):
+                shutil.copyfile(os.path.join(src, f), os.path.join(dst, f))
+        with open(os.path.join(out_dir, "rollups", "index.json"), "w", encoding="utf-8") as fh:
+            json.dump(rollup.index(data_dir), fh, separators=(",", ":"))
+        print(f"rollups: {len(os.listdir(dst))} day files published")
+    except Exception as e:  # pragma: no cover
+        print(f"::warning::rollups not published: {type(e).__name__}: {e}")
 
 if __name__ == "__main__": main()
