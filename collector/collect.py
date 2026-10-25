@@ -47,12 +47,15 @@ except Exception:  # pragma: no cover - tzdata missing
 API = "https://api.tfl.gov.uk"
 DATASETS = ["liftDisruptions", "lineStatus", "stopDisruptions", "crowdingReadings", "arrivalsReadings", "arrivalsDetail",
             "busLineStatus", "networkDisruptions", "crowdingNetwork", "nationalRailDepartures", "nationalRailIncidents",
-            "nationalRailStations", "stationAccess", "arrivalsNetwork"]
+            "nationalRailStations", "stationAccess", "arrivalsNetwork", "plannedLineStatus"]
+# plannedLineStatus: once a day, every line's status for today and the next 7 days, with validity periods (planned
+# closures and works ahead). TfL has no mode-level date-range call, so the line ids come from /Line/Mode/{m} and go to
+# /Line/{ids}/Status/{from}/to/{to}?detail=true in chunks (a ~450-character id list is refused with HTTP 400).
 # arrivalsNetwork: every live prediction on the whole network, one call per mode (/Mode/{mode}/Arrivals?count=-1):
 # tube, Elizabeth line, Overground, DLR, tram, river bus (~7,000 rows an hour). Cable car and Woolwich Ferry publish none.
 # nationalRailStations: the whole Knowledgebase stations feed (~2,600 stations, ~55 MB), once a day; each
 # day stores a short fingerprint of every station and the full entry only for stations that changed.
-DAILY_AT_UTC = {"nationalRailStations": 3, "stationAccess": 3}
+DAILY_AT_UTC = {"nationalRailStations": 3, "stationAccess": 3, "plannedLineStatus": 3}
 # stationAccess: TfL's station accessibility data (every lift at every station, which areas it links,
 # platforms, step-free paths, toilets): the ZIP is kept whole in data/_reference/tfl-stationdata/ each
 # time its content changes, so a lift outage can be judged against how many lifts the station has.   # collected once per UTC day, at the first run from this hour
@@ -65,7 +68,7 @@ DETAIL_FIELDS = ["naptanId", "lineId", "platformName", "direction", "destination
 # Large datasets are stored gzip-compressed: each hour appends one gzip member to <day>.ndjson.gz
 # (multi-member gzip; `gzip -dc`, Python gzip and zlib all read it as one stream). Keeps the repo lean.
 GZIP_DATASETS = {"arrivalsDetail", "busLineStatus", "networkDisruptions", "crowdingNetwork", "nationalRailDepartures",
-                 "nationalRailIncidents", "nationalRailStations", "arrivalsNetwork"}
+                 "nationalRailIncidents", "nationalRailStations", "arrivalsNetwork", "plannedLineStatus"}
 LATE_FILL_MAX = timedelta(minutes=45)
 RETRY_PASS_DELAY_S = 45
 CHUNK = 20
@@ -835,6 +838,54 @@ def collect_national_rail(c, ctx):
     return body, ("ok" if good == len(stations) else "partial"), svc, f"{good}/{len(stations)} stations, {svc} services"
 
 
+PLANNED_DAYS = 7
+PLANNED_IDS_MAX = 200  # characters of comma-joined line ids per call; TfL answers HTTP 400 "invalid URL" well below ~450
+
+
+def chunk_ids(ids, limit=PLANNED_IDS_MAX):
+    out, cur = [], []
+    for i in ids:
+        if cur and len(",".join(cur + [i])) > limit:
+            out.append(cur)
+            cur = []
+        cur.append(i)
+    if cur:
+        out.append(cur)
+    return out
+
+
+def collect_planned(c, ctx):
+    """Every line's status from today (London) to today + 7 days, with validity periods: what is planned ahead."""
+    today = ctx["now_local"].date()
+    end = today + timedelta(days=PLANNED_DAYS)
+    ids, seen, modes_ok, modes = [], set(), 0, ctx["statusModes"]
+    for m in modes:
+        r = c.get(f"/Line/Mode/{m}")
+        if isinstance(r, list):
+            modes_ok += 1
+            for l in r:
+                if isinstance(l, dict) and l.get("id") and l["id"] not in seen:
+                    seen.add(l["id"])
+                    ids.append(l["id"])
+    if not ids:
+        return None, "failed", 0, f"0/{len(modes)} mode lists"
+    chunks, lines, ok = chunk_ids(ids), [], 0
+    for ch in chunks:
+        r = c.get(f"/Line/{','.join(ch)}/Status/{today.isoformat()}/to/{end.isoformat()}?detail=true")
+        if isinstance(r, list):
+            ok += 1
+            for l in r:
+                lines.append({"id": l["id"], "name": l["name"], "mode": l.get("modeName"),
+                              "statuses": [status_entry(s) for s in l.get("lineStatuses", [])]})
+    if not lines:
+        return None, "failed", 0, f"0/{len(chunks)} status calls"
+    resolved = add_nr_messages(lines, ctx)
+    body = {"source": API + "/Line/{ids}/Status/{from}/to/{to}?detail=true", "from": today.isoformat(), "to": end.isoformat(),
+            "linesRequested": ids, "lines": lines}
+    return body, ("ok" if ok == len(chunks) and modes_ok == len(modes) else "partial"), len(lines), \
+        f"{ok}/{len(chunks)} status calls, {len(lines)}/{len(ids)} lines" + (f", {resolved} National Rail messages" if resolved else "")
+
+
 COLLECTORS = {
     "liftDisruptions": collect_lift,
     "lineStatus": collect_lines,
@@ -850,6 +901,7 @@ COLLECTORS = {
     "nationalRailStations": collect_nr_stations,
     "stationAccess": collect_station_access,
     "arrivalsNetwork": collect_arrivals_network,
+    "plannedLineStatus": collect_planned,
 }
 
 
@@ -1029,7 +1081,8 @@ def run(args, fetch=default_fetch, sleep=time.sleep, clock=utcnow, nr_fetch=nr_d
                      "nationalRailDepartures": len(base_ctx["nrStations"]) if nr_key else 0,
                      "nationalRailIncidents": 1 if kb_inc_key else 0,
                      "nationalRailStations": 1 if kb_st_key else 0, "stationAccess": 1,
-                     "arrivalsNetwork": len(base_ctx.get("arrivalsNetworkModes") or [])}
+                     "arrivalsNetwork": len(base_ctx.get("arrivalsNetworkModes") or []),
+                     "plannedLineStatus": len(base_ctx["statusModes"]) + 4}
             if "arrivalsDetail" in todo and "arrivalsReadings" not in todo:
                 calls["arrivalsDetail"] = calls["arrivalsReadings"]
             log(f"dry-run: would make ~{sum(calls[d] for d in todo)} requests; nothing fetched or written")

@@ -145,8 +145,8 @@ def _open_any(path):
     return gzip.open(path, "rt", encoding="utf-8") if path.endswith(".gz") else open(path, encoding="utf-8")
 
 
-def nr_incident_lookup(data_dir):
-    """url -> readable incident, from the latest stored version of every KB incident (newOrChanged XML)."""
+def latest_incident_xml(data_dir):
+    """{incident id: (version, xml)}: the latest stored version of every KB incident (newOrChanged XML)."""
     latest = {}
     for f in sorted(glob.glob(os.path.join(data_dir, "nationalRailIncidents", "*.ndjson*"))):
         try:
@@ -162,6 +162,12 @@ def nr_incident_lookup(data_dir):
                             latest[i] = (v, x)
         except (OSError, EOFError):
             continue
+    return latest
+
+
+def nr_incident_lookup(data_dir):
+    """url -> readable incident, from the latest stored version of every KB incident (newOrChanged XML)."""
+    latest = latest_incident_xml(data_dir)
     by_url = {}
     for i, (v, x) in latest.items():
         for u in re.findall(r"<(?:\w+:)?Uri>\s*([^<]+?)\s*</(?:\w+:)?Uri>", x):
@@ -811,6 +817,148 @@ def main():
     print(f"wrote {out} ({os.path.getsize(out)} bytes), latest.json; dataThrough={last_global}")
     publish_rollups(a.data, a.out)
     publish_nr_reasons(a.data, a.out)
+    publish_upcoming(a.data, a.out)
+
+
+UPCOMING_DAYS = 7
+GOOD_SEVERITY = (10, 18)   # Good Service, No Issues
+
+
+def _iso_dt(t):
+    d = datetime.datetime.fromisoformat(str(t).replace("Z", "+00:00"))
+    return d if d.tzinfo else d.replace(tzinfo=datetime.timezone.utc)
+
+
+def _union_hours(iv):
+    tot, end = 0.0, None
+    for a, b in sorted(iv):
+        if end is None or a > end:
+            tot += b - a; end = b
+        elif b > end:
+            tot += b - end; end = b
+    return round(tot / 3600, 1)
+
+
+def build_upcoming(data_dir, now_iso):
+    """Planned works for today and the next 6 London days (upcoming.json), from the daily plannedLineStatus capture
+    (TfL modes: planned statuses only; real-time delays are not 'ahead') and the National Rail Knowledgebase
+    incidents (planned, not cleared, overlapping the week). Per line or operator: for each day the kind, hours
+    affected and message ids; the messages with their validity windows exactly as published; and, for the map,
+    the stops TfL names as affected. Empty but valid when nothing has been captured yet."""
+    import rollup
+    try:
+        from zoneinfo import ZoneInfo
+        tz = ZoneInfo("Europe/London")
+    except Exception:  # pragma: no cover - tzdata missing
+        tz = datetime.timezone.utc
+    now = _iso_dt(now_iso)
+    day0 = now.astimezone(tz).date()
+    days = [(day0 + datetime.timedelta(days=i)).isoformat() for i in range(UPCOMING_DAYS)]
+    bounds = {}
+    for d in days:
+        dd = datetime.date.fromisoformat(d)
+        a = datetime.datetime.combine(dd, datetime.time(0), tzinfo=tz)
+        b = datetime.datetime.combine(dd + datetime.timedelta(days=1), datetime.time(0), tzinfo=tz)
+        bounds[d] = (a.timestamp(), b.timestamp())
+    out = {"v": 1, "built": now.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "from": days[0], "to": days[-1],
+           "days": days, "lines": {}, "nr": {}, "stops": {}, "stopLines": {}}
+
+    def overlaps(a, b):
+        """{day: (start_s, end_s)} of the part of [a, b) inside each strip day."""
+        res = {}
+        for d, (ds, de) in bounds.items():
+            lo, hi = max(a, ds), min(b, de)
+            if hi > lo:
+                res[d] = (lo, hi)
+        return res
+
+    pl = latest_record(data_dir, "plannedLineStatus")
+    for ln in (pl or {}).get("lines") or []:
+        if ln.get("mode") == "national-rail":
+            continue          # operators come from the Knowledgebase incidents below
+        msgs, keyidx, perday = [], {}, {}
+        for st in ln.get("statuses") or []:
+            if st.get("severity") in GOOD_SEVERITY or not st.get("validity"):
+                continue
+            if rollup.status_kind(st, None) != "p":
+                continue
+            text = tidy_reason(st.get("reason"), ln.get("name")) or st.get("description") or "Planned works"
+            key = (text, st.get("description"))
+            if key not in keyidx:
+                keyidx[key] = len(msgs)
+                msgs.append({"t": text, "k": "p", "s": st.get("description"), "w": []})
+            i = keyidx[key]
+            for w in st["validity"]:
+                try:
+                    a, b = _iso_dt(w[0]).timestamp(), _iso_dt(w[1]).timestamp()
+                except (ValueError, TypeError, IndexError):
+                    continue
+                if list(w) not in msgs[i]["w"]:
+                    msgs[i]["w"].append(list(w))
+                for d, (lo, hi) in overlaps(a, b).items():
+                    P = perday.setdefault(d, {"iv": [], "r": [], "sd": {}})
+                    P["iv"].append((lo, hi))
+                    if i not in P["r"]:
+                        P["r"].append(i)
+                    P["sd"][st.get("description")] = P["sd"].get(st.get("description"), 0) + (hi - lo)
+                    for stop in (st.get("disruption") or {}).get("affectedStops") or []:
+                        if stop:
+                            out["stops"].setdefault(stop, {})[d] = "p"
+                            if ln["id"] not in out["stopLines"].setdefault(stop, []):
+                                out["stopLines"][stop].append(ln["id"])
+        if perday:
+            out["lines"][ln["id"]] = {"n": ln.get("name"), "m": ln.get("mode"), "r": msgs, "d": {
+                d: {"k": "p", "h": _union_hours(P["iv"]), "s": max(P["sd"], key=P["sd"].get), "r": sorted(P["r"])}
+                for d, P in sorted(perday.items())}}
+
+    ir = latest_record(data_dir, "nationalRailIncidents")
+    active = (ir or {}).get("active") or []
+    xml = latest_incident_xml(data_dir) if active else {}
+    per_op = {}
+    for row in active:
+        try:
+            iid, _ver, planned, _prio, start, end, ops, cleared = row[:8]
+            a, b = _iso_dt(start).timestamp(), _iso_dt(end).timestamp()
+        except (ValueError, TypeError):
+            continue
+        if not planned or cleared or not ops:
+            continue
+        ov = overlaps(a, b)
+        if not ov:
+            continue
+        summary = None
+        if iid in xml:
+            import xml.etree.ElementTree as ET
+            try:
+                for y in ET.fromstring(xml[iid][1]).iter():
+                    if y.tag.rsplit("}", 1)[-1] == "Summary" and (y.text or "").strip():
+                        summary = y.text.strip(); break
+            except ET.ParseError:
+                pass
+        if summary and rollup.INFO_RE.search(summary):
+            continue
+        for op in ops:
+            P = per_op.setdefault(op, {"d": {}, "r": []})
+            P["r"].append({"t": summary or "Planned engineering works", "k": "p", "w": [[start, end]], "id": iid})
+            for d, (lo, hi) in ov.items():
+                x = P["d"].setdefault(d, {"iv": [], "n": 0})
+                x["iv"].append((lo, hi)); x["n"] += 1
+    for op, P in sorted(per_op.items()):
+        out["nr"][op] = {"d": {d: {"k": "p", "h": _union_hours(x["iv"]), "n": x["n"]} for d, x in sorted(P["d"].items())},
+                         "r": sorted(P["r"], key=lambda r: (r["w"][0][0], r["t"]))}
+    return out
+
+
+def publish_upcoming(data_dir, out_dir):
+    """Always writes rollups/upcoming.json (valid and empty if anything fails), so the page never gets a 404."""
+    try:
+        up = build_upcoming(data_dir, datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
+    except Exception as e:  # pragma: no cover
+        print(f"::warning::upcoming not built: {type(e).__name__}: {e}")
+        up = {"v": 1, "built": None, "from": None, "to": None, "days": [], "lines": {}, "nr": {}, "stops": {}, "stopLines": {}}
+    os.makedirs(os.path.join(out_dir, "rollups"), exist_ok=True)
+    with open(os.path.join(out_dir, "rollups", "upcoming.json"), "w", encoding="utf-8") as fh:
+        json.dump(up, fh, separators=(",", ":"), ensure_ascii=False)
 
 
 def publish_nr_reasons(data_dir, out_dir):

@@ -139,6 +139,92 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(h["circle"][-3], 0)
 
 
+class UpcomingTests(unittest.TestCase):
+    """upcoming.json: planned works for the next 7 days, from the daily plannedLineStatus capture (TfL modes) and
+    the National Rail Knowledgebase incidents (planned engineering works only), as day-by-day windows."""
+    NOW = "2026-10-25T13:00:00Z"                     # 25 Oct 2026: clocks went back at 02:00, London = UTC from here
+
+    def put(self, d, ds, recs, gz=True):
+        p = Path(d) / ds; p.mkdir(parents=True, exist_ok=True)
+        f = p / ("2026-10-25.ndjson.gz" if gz else "2026-10-25.ndjson")
+        with (gzip.open(f, "wt") if gz else open(f, "w")) as fh:
+            for r in recs:
+                fh.write(json.dumps(r) + "\n")
+
+    def inc_xml(self, iid, start, end, planned, ops, summary):
+        return ("<ns0:PtIncident xmlns:ns0=\"http://nationalrail.co.uk/xml/incident\" xmlns:ns1=\"http://nationalrail.co.uk/xml/common\">"
+                f"<ns0:IncidentNumber>{iid}</ns0:IncidentNumber><ns0:Version>1</ns0:Version>"
+                f"<ns0:ValidityPeriod><ns1:StartTime>{start}</ns1:StartTime><ns1:EndTime>{end}</ns1:EndTime></ns0:ValidityPeriod>"
+                f"<ns0:Planned>{'true' if planned else 'false'}</ns0:Planned><ns0:Summary>{summary}</ns0:Summary>"
+                "<ns0:Affects><ns0:Operators>" + "".join(f"<ns0:AffectedOperator><ns0:OperatorRef>{o}</ns0:OperatorRef></ns0:AffectedOperator>" for o in ops)
+                + "</ns0:Operators></ns0:Affects></ns0:PtIncident>")
+
+    def build(self, d):
+        self.put(d, "plannedLineStatus", [{"slot": "2026-10-25T05:00:00Z", "from": "2026-10-25", "to": "2026-11-01", "lines": [
+            {"id": "central", "name": "Central", "mode": "tube", "statuses": [
+                {"severity": 10, "description": "Good Service", "reason": None},
+                {"severity": 5, "description": "Part Closure", "reason": "CENTRAL LINE: no service between Epping and Leytonstone.",
+                 "validity": [["2026-10-31T00:30:00Z", "2026-11-01T04:00:00Z"]],
+                 "disruption": {"category": "PlannedWork", "affectedStops": ["940GZZLULYN", "940GZZLUEPG"]}},
+                {"severity": 5, "description": "Part Closure", "reason": "CENTRAL LINE: no service between Epping and Leytonstone.",   # duplicate with other stops
+                 "validity": [["2026-10-31T00:30:00Z", "2026-11-01T04:00:00Z"]],
+                 "disruption": {"category": "PlannedWork", "affectedStops": ["940GZZLULYN"]}}]},
+            {"id": "jubilee", "name": "Jubilee", "mode": "tube", "statuses": [
+                {"severity": 9, "description": "Minor Delays", "reason": "Minor delays due to a signal failure",
+                 "validity": [["2026-10-25T12:00:00Z", "2026-10-26T01:00:00Z"]], "disruption": {"category": "RealTime"}}]}]}])
+        act = [["PLAN1", "1", True, "2", "2026-10-24T00:00:00.000+00:00", "2026-10-26T23:59:00.000+00:00", ["SN", "TL"], False],
+               ["LATER", "1", True, "2", "2026-12-20T00:00:00.000+00:00", "2026-12-20T23:59:00.000+00:00", ["SN"], False],
+               ["FAULT", "1", False, "1", "2026-10-25T08:00:00.000+00:00", "2026-10-25T18:00:00.000+00:00", ["SE"], False],
+               ["DONE", "1", True, "2", "2026-10-25T00:00:00.000+00:00", "2026-10-27T00:00:00.000+00:00", ["SW"], True]]
+        xml = lambda i, a, b, pl, ops, t: {"id": i, "version": "1", "xml": self.inc_xml(i, a, b, pl, ops, t)}
+        self.put(d, "nationalRailIncidents", [{"slot": "2026-10-25T12:00:00Z", "count": 4, "active": act, "newOrChanged": [
+            xml("PLAN1", act[0][4], act[0][5], True, ["SN", "TL"], "Buses replace trains between Brighton and Haywards Heath"),
+            xml("LATER", act[1][4], act[1][5], True, ["SN"], "Christmas works"),
+            xml("FAULT", act[2][4], act[2][5], False, ["SE"], "Signalling fault at Lewisham"),
+            xml("DONE", act[3][4], act[3][5], True, ["SW"], "CLEARED: works finished")]}])
+        return aggregate.build_upcoming(d, self.NOW)
+
+    def test_tfl_planned_closure_by_day_deduped_and_unplanned_left_out(self):
+        with tempfile.TemporaryDirectory() as d:
+            U = self.build(d)
+            self.assertEqual((U["v"], U["from"], U["days"][0], U["days"][-1], len(U["days"])), (1, "2026-10-25", "2026-10-25", "2026-10-31", 7))
+            self.assertNotIn("jubilee", U["lines"])                       # real-time delay: not planned works
+            c = U["lines"]["central"]
+            self.assertEqual((c["n"], c["m"]), ("Central", "tube"))
+            self.assertEqual(list(c["d"]), ["2026-10-31"])
+            self.assertEqual((c["d"]["2026-10-31"]["k"], c["d"]["2026-10-31"]["h"], c["d"]["2026-10-31"]["s"]), ("p", 23.5, "Part Closure"))
+            self.assertEqual(len(c["r"]), 1)                              # the duplicate message appears once
+            self.assertEqual((c["r"][0]["t"], c["r"][0]["w"]), ("no service between Epping and Leytonstone.", [["2026-10-31T00:30:00Z", "2026-11-01T04:00:00Z"]]))
+            self.assertEqual(c["d"]["2026-10-31"]["r"], [0])
+            self.assertEqual(U["stops"], {"940GZZLULYN": {"2026-10-31": "p"}, "940GZZLUEPG": {"2026-10-31": "p"}})
+            self.assertEqual(U["stopLines"], {"940GZZLULYN": ["central"], "940GZZLUEPG": ["central"]})
+
+    def test_national_rail_planned_works_only_within_the_week(self):
+        with tempfile.TemporaryDirectory() as d:
+            U = self.build(d)
+            self.assertEqual(sorted(U["nr"]), ["SN", "TL"])                 # not SE (unplanned fault), SW (cleared)
+            sn = U["nr"]["SN"]
+            self.assertEqual(sorted(sn["d"]), ["2026-10-25", "2026-10-26"])
+            self.assertEqual((sn["d"]["2026-10-25"]["k"], sn["d"]["2026-10-25"]["n"]), ("p", 1))
+            self.assertEqual(sn["r"][0]["t"], "Buses replace trains between Brighton and Haywards Heath")
+            self.assertEqual(sn["r"][0]["w"], [["2026-10-24T00:00:00.000+00:00", "2026-10-26T23:59:00.000+00:00"]])      # as published
+            self.assertNotIn("Christmas works", [x["t"] for x in sn["r"]])
+
+    def test_missing_data_gives_an_empty_but_valid_file(self):
+        with tempfile.TemporaryDirectory() as d:
+            U = aggregate.build_upcoming(d, self.NOW)
+            self.assertEqual((U["v"], U["lines"], U["nr"], U["stops"], U["stopLines"], len(U["days"])), (1, {}, {}, {}, {}, 7))
+
+
+class UpcomingPublishTests(unittest.TestCase):
+    def test_file_always_published_even_with_no_data(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "data").mkdir(); out = Path(d) / "out"
+            aggregate.publish_upcoming(str(Path(d) / "data"), str(out))
+            U = json.loads((out / "rollups" / "upcoming.json").read_text())
+            self.assertEqual((U["v"], U["lines"], U["nr"], U["stops"], len(U["days"])), (1, {}, {}, {}, 7))
+
+
 class NrReasonsPublishTests(unittest.TestCase):
     """The page always fetches rollups/nrReasons.json, so it must always exist (an empty object until the
     Darwin reason list has been fetched) and never cause a 404 in the browser console."""

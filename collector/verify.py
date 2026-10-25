@@ -15,8 +15,8 @@ from pathlib import Path
 
 DATASETS = ["liftDisruptions", "lineStatus", "stopDisruptions", "crowdingReadings", "arrivalsReadings", "arrivalsDetail",
             "busLineStatus", "networkDisruptions", "crowdingNetwork", "nationalRailDepartures",
-            "nationalRailIncidents", "nationalRailStations", "stationAccess", "arrivalsNetwork"]
-DAILY_AT_UTC = {"nationalRailStations": 3, "stationAccess": 3}  # once per UTC day: one record per day expected, due from this hour
+            "nationalRailIncidents", "nationalRailStations", "stationAccess", "arrivalsNetwork", "plannedLineStatus"]
+DAILY_AT_UTC = {"nationalRailStations": 3, "stationAccess": 3, "plannedLineStatus": 3}  # once per UTC day: one record per day expected, due from this hour
 GRACE = timedelta(minutes=20)  # a slot is "due" 20 min after its hour starts
 
 

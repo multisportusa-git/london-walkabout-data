@@ -404,6 +404,91 @@ class StationAccessTests(unittest.TestCase):
             self.assertEqual(len(list((Path(tmp) / "_reference" / "tfl-stationdata").iterdir())), 1)
 
 
+class PlannedLineStatusTests(unittest.TestCase):
+    """plannedLineStatus: once a day from 03:00 UTC, every line's status for today and the next 7 days
+    (TfL has no mode-level date-range call, so ids come from /Line/Mode/{m} and go to
+    /Line/{ids}/Status/{from}/to/{to} in URL-safe chunks: a long id list is refused with HTTP 400)."""
+    OPERATORS = [f"operator-number-{i:02d}" for i in range(30)]           # ~450 characters of ids: needs several chunks
+    MODE_LINES = {"tube": ["bakerloo", "central"], "dlr": ["dlr"], "national-rail": OPERATORS, "river-bus": ["woolwich-ferry"]}
+
+    def make_fetch(self, calls, fail_id=None):
+        import re
+        from urllib.parse import urlparse
+
+        def fetch(url, timeout):
+            path = urlparse(url).path
+            calls.append(path)
+            m = re.match(r"^/Line/Mode/([^/]+)$", path)
+            if m:
+                lines = [{"id": i, "name": i.title(), "modeName": mode} for mode in m.group(1).split(",") for i in self.MODE_LINES.get(mode, [])]
+                return 200, json.dumps(lines).encode(), {}
+            m = re.match(r"^/Line/([^/]+)/Status/(\d{4}-\d{2}-\d{2})/to/(\d{4}-\d{2}-\d{2})$", path)
+            if m:
+                ids = m.group(1).split(",")
+                if fail_id and fail_id in ids:
+                    return 404, b"{}", {}
+                out = []
+                for i in ids:
+                    st = [{"statusSeverity": 10, "statusSeverityDescription": "Good Service", "reason": None, "validityPeriods": []}]
+                    if i == "central":
+                        st.append({"statusSeverity": 3, "statusSeverityDescription": "Part Closure", "reason": "Central line: no service Epping to Leytonstone.",
+                                   "validityPeriods": [{"fromDate": "2026-10-31T00:30:00Z", "toDate": "2026-11-01T04:00:00Z", "isNow": False}],
+                                   "disruption": {"category": "PlannedWork", "categoryDescription": "PlannedWork", "created": "2026-10-20T10:00:00Z",
+                                                  "additionalInfo": "", "affectedStops": [{"naptanId": "940GZZLULYN"}]}})
+                    out.append({"id": i, "name": i.title(), "modeName": "tube", "lineStatuses": st})
+                return 200, json.dumps(out).encode(), {}
+            return 404, b"{}", {}
+        return fetch
+
+    def go(self, tmp, now, calls, **kw):
+        import argparse
+        a = argparse.Namespace(out=tmp, registry=str(ROOT / "config" / "registry.json"), now=now, no_sleep=True,
+                               datasets="plannedLineStatus", dry_run=False, current_only=True)
+        return collect.run(a, fetch=self.make_fetch(calls, **kw), sleep=lambda s: None, clock=lambda: dt(now))
+
+    @staticmethod
+    def records(tmp):
+        import gzip
+        return [json.loads(l) for f in sorted((Path(tmp) / "plannedLineStatus").iterdir()) for l in gzip.open(f, "rt") if l.strip()]
+
+    def test_week_ahead_in_url_safe_chunks_once_a_day_from_03_utc(self):
+        import re
+        with tempfile.TemporaryDirectory() as tmp:
+            calls = []
+            self.assertEqual(self.go(tmp, "2026-10-25T02:00:05Z", calls), 0)       # before 03:00 UTC: not due yet
+            self.assertEqual((calls, (Path(tmp) / "plannedLineStatus").exists()), ([], False))
+            self.assertEqual(self.go(tmp, "2026-10-25T05:00:05Z", calls), 0)
+            status_calls = [c for c in calls if "/Status/" in c]
+            self.assertGreaterEqual(len(status_calls), 3)
+            asked = []
+            for c in status_calls:
+                ids = re.match(r"^/Line/([^/]+)/Status/(.+)$", c).group(1)
+                self.assertLessEqual(len(ids), 200)
+                asked += ids.split(",")
+                self.assertTrue(c.endswith("/Status/2026-10-25/to/2026-11-01"), c)   # today (London) to today + 7
+            self.assertEqual(sorted(asked), sorted(i for v in self.MODE_LINES.values() for i in v))   # each line exactly once
+            (rec,) = self.records(tmp)
+            self.assertEqual((rec["slot"], rec["from"], rec["to"]), ("2026-10-25T05:00:00Z", "2026-10-25", "2026-11-01"))
+            self.assertEqual(len(rec["lines"]), 34)
+            central = [l for l in rec["lines"] if l["id"] == "central"][0]
+            planned = [s for s in central["statuses"] if s["severity"] == 3][0]
+            self.assertEqual(planned["validity"], [["2026-10-31T00:30:00Z", "2026-11-01T04:00:00Z"]])
+            self.assertEqual((planned["disruption"]["category"], planned["disruption"]["affectedStops"]), ("PlannedWork", ["940GZZLULYN"]))
+            n = len(calls)
+            self.assertEqual(self.go(tmp, "2026-10-25T06:00:05Z", calls), 0)          # same UTC day: not fetched again
+            self.assertEqual((len(calls), len(self.records(tmp))), (n, 1))
+
+    def test_one_failed_chunk_is_partial_and_the_rest_is_kept(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            calls = []
+            self.go(tmp, "2026-10-25T05:00:05Z", calls, fail_id="operator-number-03")
+            (rec,) = self.records(tmp)
+            self.assertLess(len(rec["lines"]), 34)
+            self.assertGreater(len(rec["lines"]), 0)
+            health = [json.loads(l) for f in sorted((Path(tmp) / "_health").iterdir()) for l in f.read_text().splitlines()]
+            self.assertEqual(health[-1]["datasets"]["plannedLineStatus"]["status"], "partial")
+
+
 class ArrivalsCoverageTests(unittest.TestCase):
     def run_ds(self, tmp, ds, fetch):
         import argparse
@@ -524,6 +609,9 @@ class RunTests(unittest.TestCase):
         if "/Line/Mode/" in url:
             return 200, json.dumps([{"id": "central", "name": "Central", "modeName": "tube",
                                      "lineStatuses": [{"statusSeverity": 10, "statusSeverityDescription": "Good Service"}]}]).encode(), {}
+        if "/Status/" in url and "/to/" in url:       # plannedLineStatus: the week-ahead call for the ids listed above
+            return 200, json.dumps([{"id": "central", "name": "Central", "modeName": "tube",
+                                     "lineStatuses": [{"statusSeverity": 10, "statusSeverityDescription": "Good Service"}]}]).encode(), {}
         if "/Disruption" in url:
             return 200, b"[]", {}
         if "/crowding/" in url:
@@ -553,7 +641,7 @@ class RunTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             self.assertEqual(self.lines(tmp, "nationalRailDepartures"), [])   # no NR_API_KEY: skipped, not a gap
             self.assertEqual(self.lines(tmp, "nationalRailIncidents"), [])
-            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations", "stationAccess")]:
+            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations", "stationAccess", "plannedLineStatus")]:
                 recs = self.lines(tmp, d)
                 self.assertEqual([r["slot"] for r in recs], ["2026-10-24T16:00:00Z"])
                 self.assertEqual(recs[0]["authMode"], "anonymous-no-key")
@@ -562,12 +650,12 @@ class RunTests(unittest.TestCase):
             health = self.lines(tmp, "_health")
             self.assertEqual(len(health), 1)
             self.assertEqual(health[0]["datasets"]["crowdingReadings"]["status"], "ok")
-            self.assertEqual(health[0]["requests"], 1 + 2 + 5 + 33 + 47 + 1 + 5 + 315 + 1 + 6)  # + daily station data ZIP + 6 network arrivals modes  # arrivals calls shared with arrivalsDetail
+            self.assertEqual(health[0]["requests"], 1 + 2 + 5 + 33 + 47 + 1 + 5 + 315 + 1 + 6 + 3)  # + daily station data ZIP + 6 network arrivals modes + plannedLineStatus (2 mode lists, 1 status call)  # arrivals calls shared with arrivalsDetail
             # backup run: nothing to do, nothing fetched, nothing appended
             rc2 = collect.run(self.args(tmp, now="2026-10-24T16:05:00Z"), fetch=lambda u, t: 1 / 0,
                               sleep=lambda s: None, clock=lambda: dt("2026-10-24T16:05:01Z"))
             self.assertEqual(rc2, 0)
-            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations", "stationAccess")] + ["_health"]:
+            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations", "stationAccess", "plannedLineStatus")] + ["_health"]:
                 self.assertEqual(len(self.lines(tmp, d)), 1, d)
 
     def test_backup_fills_only_missing_dataset(self):
@@ -576,7 +664,7 @@ class RunTests(unittest.TestCase):
                         sleep=lambda s: None, clock=lambda: dt("2026-10-24T16:00:01Z"))
             collect.run(self.args(tmp, now="2026-10-24T16:05:00Z"), fetch=self.fake_fetch,
                         sleep=lambda s: None, clock=lambda: dt("2026-10-24T16:05:01Z"))
-            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations", "stationAccess")]:
+            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations", "stationAccess", "plannedLineStatus")]:
                 self.assertEqual(len(self.lines(tmp, d)), 1, d)
 
     def test_late_backup_fills_missed_hour_then_next_hour(self):
@@ -586,7 +674,7 @@ class RunTests(unittest.TestCase):
             rc = collect.run(self.args(tmp, now="2026-10-24T15:35:00Z", no_sleep=False), fetch=self.fake_fetch,
                              sleep=sleeps.append, clock=lambda: dt("2026-10-24T15:35:00Z"))
             self.assertEqual(rc, 0)
-            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations", "stationAccess")]:
+            for d in [x for x in collect.DATASETS if x not in ("nationalRailDepartures", "nationalRailIncidents", "nationalRailStations", "stationAccess", "plannedLineStatus")]:
                 self.assertEqual([r["slot"] for r in self.lines(tmp, d)],
                                  ["2026-10-24T15:00:00Z", "2026-10-24T16:00:00Z"], d)
             self.assertIn(1500.0, sleeps)  # waited until 16:00:00, never polled early
