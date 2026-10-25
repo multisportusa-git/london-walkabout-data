@@ -819,6 +819,7 @@ def main():
     publish_nr_reasons(a.data, a.out)
     publish_bus_routes(a.data, a.out)
     publish_line_routes(a.data, a.out)
+    publish_nr_stations(a.data, a.out)
     publish_upcoming(a.data, a.out)
 
 
@@ -1016,6 +1017,38 @@ def publish_line_routes(data_dir, out_dir):
     os.makedirs(os.path.join(out_dir, "rollups"), exist_ok=True)
     with open(os.path.join(out_dir, "rollups", "lineRoutes.json"), "w", encoding="utf-8") as fh:
         json.dump(ref, fh, separators=(",", ":"), ensure_ascii=False)
+
+
+def publish_nr_stations(data_dir, out_dir):
+    """Every National Rail station (CRS code -> [name, lat, lon, operator slug]) for the route builder, as
+    rollups/nrStations.json, merged over all days of the nationalRailStations dataset (the first capture is the whole
+    feed, later days list only what changed; later records win, nothing is ever dropped). Always written so the page's
+    request never 404s; a broken or missing dataset gives {"s": {}}."""
+    out = {}
+    try:
+        for f in sorted(glob.glob(os.path.join(data_dir, "nationalRailStations", "*.ndjson*"))):
+            try:
+                fh = gzip.open(f, "rt", encoding="utf-8") if f.endswith(".gz") else open(f, encoding="utf-8")
+                with fh:
+                    for line in fh:
+                        try:
+                            rec = json.loads(line)
+                        except ValueError:
+                            continue
+                        for c in (rec.get("changed") or []) if isinstance(rec, dict) else []:
+                            try:
+                                crs = c["crsCode"]; loc = c["location"]
+                                out[crs] = [c["name"], round(float(loc["latitude"]), 5), round(float(loc["longitude"]), 5),
+                                            ((c.get("stationOperator") or {}).get("slug")) or ""]
+                            except (KeyError, TypeError, ValueError):
+                                continue
+            except (OSError, EOFError):
+                continue
+    except Exception:
+        out = out or {}
+    os.makedirs(os.path.join(out_dir, "rollups"), exist_ok=True)
+    with open(os.path.join(out_dir, "rollups", "nrStations.json"), "w", encoding="utf-8") as fh:
+        json.dump({"s": out}, fh, separators=(",", ":"), ensure_ascii=False)
 
 
 def publish_rollups(data_dir, out_dir):

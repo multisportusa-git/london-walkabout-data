@@ -1226,6 +1226,20 @@ function initSearch(){var box=document.getElementById("srch");if(!box||box.datas
 /* ---------- map ---------- */
 var COORD=null,LMAP=null,MAPL="lifts";
 function mapSection(){return el("section",{id:"map"},[el("h2",null,["Map"]),el("p",{class:"lede"},["Where lifts are out, where stations are busiest and where notices apply, for the chosen range. Tap a station for detail. Map data © OpenStreetMap contributors."]),el("div",{id:"map-host"},[el("div",{class:"card small skel"},["Loading the map…"])])])}
+var ESRI="https://server.arcgisonline.com/ArcGIS/rest/services/";
+function baseMap(M,mapEl){var dark=(document.documentElement.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"))==="dark",
+ osm='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',es='Imagery &copy; Esri, Maxar, Earthstar Geographics',
+ img=function(){return L.tileLayer(ESRI+"World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:es})},
+ bases={"Roadmap":L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:osm}),
+  "Satellite":img(),
+  "Hybrid":L.layerGroup([img(),L.tileLayer(ESRI+"Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",{maxZoom:19}),L.tileLayer(ESRI+"Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Labels &copy; Esri"})]),
+  "Terrain":L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{maxZoom:17,subdomains:"abc",attribution:'Map data &copy; OpenStreetMap contributors, SRTM | Style &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)'})},
+ transit=L.tileLayer("https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png",{maxZoom:19,subdomains:"abc",attribution:'Rail network &copy; <a href="https://www.openrailwaymap.org/">OpenRailwayMap</a>'}),
+ saved="Roadmap",tr=false;try{var sv=JSON.parse(localStorage.getItem("lw-basemap")||"{}");if(bases[sv.b])saved=sv.b;tr=!!sv.t}catch(e){}
+ bases[saved].addTo(M);if(tr)transit.addTo(M);mapEl.classList.toggle("dark-tiles",dark&&saved==="Roadmap");
+ L.control.layers(bases,{"Transit (rail network)":transit},{collapsed:true,position:"topright"}).addTo(M);
+ var cur=saved;M.on("baselayerchange",function(e){cur=e.name;mapEl.classList.toggle("dark-tiles",dark&&cur==="Roadmap");save()});M.on("overlayadd overlayremove",function(){save()});
+ function save(){try{localStorage.setItem("lw-basemap",JSON.stringify({b:cur,t:M.hasLayer(transit)}))}catch(e){}}}
 function loadLeaflet(){if(window.L)return Promise.resolve();return new Promise(function(res,rej){var c=document.createElement("link");c.rel="stylesheet";c.href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";document.head.appendChild(c);var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 function drawMap(){var host=document.getElementById("map-host");if(!host||!RS)return;var sct=document.getElementById("map");if(sct&&sct.classList.contains("closed"))return;
  Promise.all([loadLeaflet(),COORD?Promise.resolve():fetchJSON("stationCoords.json").then(function(j){COORD=j||{}}),loadCN(),loadCNR(winOf().ps,winOf().w.e)]).then(function(){
@@ -1233,7 +1247,7 @@ function drawMap(){var host=document.getElementById("map-host");if(!host||!RS)re
   var mapEl=el("div",{id:"lwmap",class:"lwmap",role:"region","aria-label":"Map of London stations"}),leg=el("div",{class:"legend"});host.appendChild(tabs);host.appendChild(mapEl);host.appendChild(leg);
   if(LMAP){LMAP.remove();LMAP=null}LMAP=L.map(mapEl,{scrollWheelZoom:false,attributionControl:true}).setView([51.51,-0.12],11);
   var dark=(document.documentElement.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"))==="dark";
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(LMAP);mapEl.classList.toggle("dark-tiles",dark);
+  baseMap(LMAP,mapEl);
   var pts=[],css=getComputedStyle(document.documentElement),col=function(v){return css.getPropertyValue(v).trim()||"#888"};
   if(MAPL==="planned"){var U0=UP||{stops:{},stopLines:{},lines:{}},nst=Object.keys(U0.stops||{}).length;
    Object.keys(U0.stops||{}).forEach(function(k){var c=COORD[k];if(!c)return;var ds=Object.keys(U0.stops[k]).sort(),ln=(U0.stopLines[k]||[]).map(function(id){return(U0.lines[id]||{}).n||id});
@@ -1323,7 +1337,7 @@ function legMap(it,texts){var box=el("div",{class:"fmapw",style:"display:none"})
    var at=singleAt(t);if(at&&!seen["@"+normSt(at)]){var ga=g&&matchKey(g.keys,normSt(at));if(ga){var sid=g.names[ga];seen["@"+normSt(at)]=1;pts.push({ll:[LRT.stops[sid][1],LRT.stops[sid][2]],n:LRT.stops[sid][0]})}}});
   if(!legs.length&&!pts.length)return;
   box.style.display="";var dark=(document.documentElement.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"))==="dark";
-  var M=L.map(mapEl,{scrollWheelZoom:false,attributionControl:true});L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(M);mapEl.classList.toggle("dark-tiles",dark);
+  var M=L.map(mapEl,{scrollWheelZoom:false,attributionControl:true});baseMap(M,mapEl);
   var css=getComputedStyle(document.documentElement),red=it.light==="red",alert=css.getPropertyValue(red?"--c4":"--c1").trim()||(red?"#d1443f":"#e3b341"),lc=LCOL[it.f.id]||css.getPropertyValue("--accent").trim()||"#1560c4",all=[];
   if(g)LRT.lines[it.f.id].b.forEach(function(b){var ids=b.filter(function(id){return LRT.stops[id]}),ll=ids.map(function(id){return[LRT.stops[id][1],LRT.stops[id][2]]});L.polyline(ll,{color:lc,weight:4,opacity:.6}).addTo(M);ids.forEach(function(id){L.circleMarker([LRT.stops[id][1],LRT.stops[id][2]],{radius:3,color:lc,weight:1,fillColor:"#fff",fillOpacity:1}).bindTooltip(LRT.stops[id][0]).addTo(M)})});
   legs.forEach(function(l){L.polyline(l.ll,{color:alert,weight:9,opacity:.95,lineCap:"round",dashArray:l.exact?null:"6 10"}).addTo(M);l.ll.forEach(function(c){all.push(c)});
@@ -1334,12 +1348,27 @@ function legMap(it,texts){var box=el("div",{class:"fmapw",style:"display:none"})
  return box}
 var RT_MAX=8,RSEL=0,REDIT=null,RMAP=null;
 var RLC={green:"--c0",amber:"--c1",red:"--c4",grey:"--c5"},RLT={green:"No issue reported",amber:"Possible issue",red:"Issue known",grey:"No reading"};
-var RMODE={tube:"Tube",dlr:"DLR",overground:"Overground","elizabeth-line":"Elizabeth line",tram:"Tram"};
+var RMODE={tube:"Tube",dlr:"DLR",overground:"Overground","elizabeth-line":"Elizabeth line",tram:"Tram","river-bus":"River bus & ferry","cable-car":"Cable car"};
 function rtGet(){try{var a=JSON.parse(localStorage.getItem("lw-routes")||"[]");return Array.isArray(a)?a.slice(0,RT_MAX):[]}catch(e){return[]}}
 function rtSave(a){try{localStorage.setItem("lw-routes",JSON.stringify(a.slice(0,RT_MAX)))}catch(e){}}
 function legText(d){return d.text||(d.incident?[d.incident.summary,d.incident.routes].concat((d.incident.body||[]).map(function(b){return b[Object.keys(b)[0]]})).filter(Boolean).join(". "):"")}
+var NRS=null,NRX=null;
+function loadNRS(){if(NRS)return Promise.resolve(NRS);return fetchJSON("rollups/nrStations.json?"+Date.now()).then(function(j){NRS=(j&&j.s)||{};return NRS})}
+function nrFind(n){if(!NRX){var m={},keys=[];Object.keys(NRS||{}).forEach(function(c){var k=normSt(NRS[c][0]);if(!m[k]){m[k]=c;keys.push(k)}});NRX={m:m,keys:keys}}var k=normSt(n);if(NRX.m[k])return NRX.m[k];var mk=matchKey(NRX.keys,k);return mk?NRX.m[mk]:null}
+function nrLeg(lg,r,t){var N0=0;r.name=t?t.name:lg.l;var ka=nrFind(lg.a),kb=nrFind(lg.b);
+ if(!ka||!kb){r.err="Could not find "+(!ka?lg.a:lg.b)+" in the National Rail station list.";return r}
+ var ca=NRS[ka],cb=NRS[kb];r.a=ca[0];r.b=cb[0];r.crs=[ka,kb];r.ll=[[ca[1],ca[2]],[cb[1],cb[2]]];r.dash=true;
+ if(!t)return r;r.status=t.status;if(t.cat===5){r.note="Not running at this hour.";return r}
+ r.light="green";var rank={green:0,amber:1,red:2},na=normSt(r.a),nb=normSt(r.b);
+ (t.details||[]).forEach(function(d){var txt=legText(d),dl=(d.kind==="info"||d.cat===0)?"green":(d.cat===3||d.cat===4?"red":"amber"),T=normSt(txt),hit=true,where="whole line";
+  if(legPairs(txt).length||singleAt(txt)){where="stretch";hit=T.indexOf(na)>=0||T.indexOf(nb)>=0}
+  r.items.push({text:txt,light:dl,status:(d.statuses||[])[0]||"",until:d.until,hit:hit,where:where});if(hit&&rank[dl]>rank[r.light])r.light=dl});
+ [[r.a,r.crs[0]],[r.b,r.crs[1]]].forEach(function(e){var n=e[0],crs=e[1];var b=nrsLight(crs);if(b.lt==="grey")return;var dl=b.lt==="red"?"red":(b.lt==="green"?"green":"amber");
+  r.items.push({text:nrsText(b),light:dl,status:"Departure board at "+n,hit:true,where:"station"});if(rank[dl]>rank[r.light])r.light=dl});
+ return r}
 function legInfo(lg){var N=((window.__S||{}).now||{}).lines||[],g=routeGraph(lg.l),L0=LRT&&LRT.lines[lg.l];
  var r={lg:lg,name:L0?L0.n:lg.l,light:"grey",items:[],path:null,status:null};
+ if(!L0)return nrLeg(lg,r,N.filter(function(x){return x.id===lg.l})[0]);
  if(!g){r.err="No route data for this line yet.";return r}
  var ka=matchKey(g.keys,normSt(lg.a)),kb=matchKey(g.keys,normSt(lg.b));
  if(!ka||!kb){r.err="Could not find "+(!ka?lg.a:lg.b)+" on the "+r.name+" line.";return r}
@@ -1356,25 +1385,26 @@ function legInfo(lg){var N=((window.__S||{}).now||{}).lines||[],g=routeGraph(lg.
   if(hit&&rank[dl]>rank[r.light])r.light=dl});
  return r}
 function legReport(r){var kids=[el("b",null,[r.name+": "+(r.a||r.lg.a)+" to "+(r.b||r.lg.b)]),el("div",{class:"rtbadge "+r.light},[(r.err?"Can't check":RLT[r.light])+(r.status?" · "+r.status:"")])];
+ if(r.dash&&!r.err)kids.push(el("p",{class:"small"},["Drawn as a straight line between the two stations: the rail track is not mapped."]));
  if(r.err)kids.push(el("p",{class:"small"},[r.err]));else if(r.note)kids.push(el("p",{class:"small"},[r.note]));
  else if(!r.items.length)kids.push(el("p",{class:"ok-line"},["✓ Good service: nothing reported on this line at the latest reading."]));
- r.items.forEach(function(x){kids.push(el("div",{class:"rtitem"+(x.hit?"":" off")},[el("div",{class:"dsub"},[(x.status||"Notice")+(x.until?" · until "+fmtWhen(x.until):"")+" · "+(x.hit?(x.where==="stretch"?"on your leg":"affects the whole line"):"elsewhere on the line, not your leg")]),el("p",null,[x.text||"No further detail given."])]))});
+ r.items.forEach(function(x){kids.push(el("div",{class:"rtitem"+(x.hit?"":" off")},[el("div",{class:"dsub"},[(x.status||"Notice")+(x.until?" · until "+fmtWhen(x.until):"")+" · "+(x.hit?(x.where==="stretch"?"on your leg":x.where==="station"?"station on your leg":"affects the whole line"):"elsewhere on the line, not your leg")]),el("p",null,[x.text||"No further detail given."])]))});
  return el("div",{class:"rtrep"},kids)}
 function rtOverall(infos){var rank={grey:0,green:1,amber:2,red:3},w="grey";infos.forEach(function(r){if(rank[r.light]>rank[w])w=r.light});return w}
-function rtStops(lid){var L0=LRT&&LRT.lines[lid],seen={},out=[];if(!L0)return out;L0.b.forEach(function(b){b.forEach(function(id){var s=LRT.stops[id];if(!s)return;var n=stName(s[0]);if(!seen[n]){seen[n]=1;out.push(n)}})});return out.sort()}
+function rtStops(lid){var L0=LRT&&LRT.lines[lid],seen={},out=[];if(!L0){Object.keys(NRS||{}).forEach(function(k){var n=NRS[k][0];if(!seen[n]){seen[n]=1;out.push(n)}});return out.sort()}L0.b.forEach(function(b){b.forEach(function(id){var s=LRT.stops[id];if(!s)return;var n=stName(s[0]);if(!seen[n]){seen[n]=1;out.push(n)}})});return out.sort()}
 function rtMap(host,infos){var mapEl=host.querySelector(".rtmap");if(!mapEl)return;
  loadLeaflet().then(function(){if(!mapEl.isConnected)return;if(RMAP){try{RMAP.remove()}catch(e){}RMAP=null}
   var dark=(document.documentElement.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"))==="dark";
-  var M=L.map(mapEl,{scrollWheelZoom:false});RMAP=M;L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(M);mapEl.classList.toggle("dark-tiles",dark);
+  var M=L.map(mapEl,{scrollWheelZoom:false});RMAP=M;baseMap(M,mapEl);
   var css=getComputedStyle(document.documentElement),all=[],prev=null,layers=[],last=-1;
   infos.forEach(function(r,i){if(r.path)last=i});
-  infos.forEach(function(r,i){if(!r.path)return;var ll=r.path.map(function(id){return[LRT.stops[id][1],LRT.stops[id][2]]}),col=css.getPropertyValue(RLC[r.light]).trim();
+  infos.forEach(function(r,i){if(!r.path&&!r.ll)return;var ll=r.ll||r.path.map(function(id){return[LRT.stops[id][1],LRT.stops[id][2]]}),col=css.getPropertyValue(RLC[r.light]).trim();
    if(prev&&Math.abs(prev[0]-ll[0][0])+Math.abs(prev[1]-ll[0][1])>0.0005)L.polyline([prev,ll[0]],{color:css.getPropertyValue("--c5").trim(),weight:3,dashArray:"4 8",interactive:false}).addTo(M);
-   var pl=L.polyline(ll,{color:col,weight:8,opacity:.95,lineCap:"round",lineJoin:"round"}).addTo(M);
+   var pl=L.polyline(ll,{color:col,weight:8,opacity:.95,lineCap:"round",lineJoin:"round",dashArray:r.dash?"14 10":null}).addTo(M);
    pl.bindPopup(function(){return legReport(r)},{maxWidth:320});pl.bindTooltip(r.name+": "+r.a+" to "+r.b+" — "+(RLT[r.light]));
-   ll.forEach(function(c){all.push(c);L.circleMarker(c,{radius:3,color:"#fff",weight:1,fillColor:"#333",fillOpacity:1,interactive:false}).addTo(M)});
+   ll.forEach(function(c){all.push(c);if(!r.dash)L.circleMarker(c,{radius:3,color:"#fff",weight:1,fillColor:"#333",fillOpacity:1,interactive:false}).addTo(M)});
    layers[i]=pl;prev=ll[ll.length-1];
-   if(i===0||(i>0&&infos[i-1].path===null))L.circleMarker(ll[0],{radius:7,color:"#fff",weight:2,fillColor:"#333",fillOpacity:1,interactive:false}).bindTooltip(r.a,{permanent:true,direction:"top"}).addTo(M);
+   if(i===0||(i>0&&!infos[i-1].path&&!infos[i-1].ll))L.circleMarker(ll[0],{radius:7,color:"#fff",weight:2,fillColor:"#333",fillOpacity:1,interactive:false}).bindTooltip(r.a,{permanent:true,direction:"top"}).addTo(M);
    L.circleMarker(ll[ll.length-1],{radius:7,color:"#fff",weight:2,fillColor:"#333",fillOpacity:1,interactive:false}).bindTooltip(r.b,{permanent:true,direction:"top"}).addTo(M)});
   if(all.length)M.fitBounds(L.latLngBounds(all),{padding:[36,36],maxZoom:15});setTimeout(function(){M.invalidateSize()},60);
   host._layers=layers}).catch(function(){})}
@@ -1384,6 +1414,8 @@ function rtBuild(host){var E=REDIT,wrap=el("div",{class:"rtbuild"}),msg=el("p",{
  var nm=el("input",{type:"text",value:E.n||"","aria-label":"Route name",placeholder:"e.g. Home to work",maxlength:"40"});nm.addEventListener("input",function(){E.n=nm.value});wrap.appendChild(nm);
  E.legs.forEach(function(lg,i){var row=el("div",{class:"rtrow"}),sel=el("select",{"aria-label":"Leg "+(i+1)+" line"}),dl="rt-dl-"+i+"-"+lg.l,dlE=el("datalist",{id:dl}),mode=null,og=null;
   ln.forEach(function(id){var L0=LRT.lines[id];if(L0.m!==mode){mode=L0.m;og=el("optgroup",{label:RMODE[mode]||mode});sel.appendChild(og)}var o=el("option",{value:id},[L0.n]);if(id===lg.l)o.selected=true;og.appendChild(o)});
+  var NN=((window.__S||{}).now||{}).lines||[],nrT=NN.filter(function(x){return x.mode==="national-rail"}).sort(function(x,y){return String(x.name).localeCompare(String(y.name))});
+  if(nrT.length){og=el("optgroup",{label:"National Rail operators"});sel.appendChild(og);nrT.forEach(function(t){var o=el("option",{value:t.id},[t.name]);if(t.id===lg.l)o.selected=true;og.appendChild(o)})}
   rtStops(lg.l).forEach(function(n){dlE.appendChild(el("option",{value:n}))});
   var fa=el("input",{type:"text",list:dl,value:lg.a||"","aria-label":"Leg "+(i+1)+" from station",placeholder:"From station",autocomplete:"off"}),fb=el("input",{type:"text",list:dl,value:lg.b||"","aria-label":"Leg "+(i+1)+" to station",placeholder:"To station",autocomplete:"off"});
   fa.addEventListener("input",function(){lg.a=fa.value});fb.addEventListener("input",function(){lg.b=fb.value});
@@ -1400,13 +1432,13 @@ function rtBuild(host){var E=REDIT,wrap=el("div",{class:"rtbuild"}),msg=el("p",{
   rtSave(all);RSEL=E.i;REDIT=null;drawRoutes()});
  [add,save,cancel].forEach(function(x){bar.appendChild(x)});wrap.appendChild(bar);wrap.appendChild(msg);host.appendChild(wrap)}
 function drawRoutes(){var host=document.getElementById("rt-host");if(!host)return;
- loadLRT().then(function(){host.innerHTML="";var routes=rtGet();if(RSEL>=routes.length)RSEL=0;
+ Promise.all([loadLRT(),loadNRS()]).then(function(){host.innerHTML="";var routes=rtGet();if(RSEL>=routes.length)RSEL=0;
   var chips=el("div",{class:"rtchips",role:"group","aria-label":"Saved routes"});
   routes.forEach(function(rt,i){var inf=rt.legs.map(legInfo),c=el("button",{type:"button",class:"fchip"+(i===RSEL&&!REDIT?" on":""),"aria-pressed":String(i===RSEL&&!REDIT)},[el("span",{class:"rtdot "+rtOverall(inf),"aria-hidden":"true"}),rt.n]);
    c.addEventListener("click",function(){RSEL=i;REDIT=null;drawRoutes()});chips.appendChild(c)});
   if(routes.length<RT_MAX){var nw=el("button",{type:"button",class:"fchip"},["+ New route"]);nw.addEventListener("click",function(){var ln=Object.keys(LRT.lines).sort();REDIT={i:-1,n:"",legs:[{l:LRT.lines.elizabeth?"elizabeth":ln[0],a:"",b:""}]};drawRoutes()});chips.appendChild(nw)}
   host.appendChild(chips);
-  if(REDIT){host.appendChild(el("div",{class:"rthead"},[el("h3",null,[REDIT.i>=0?"Edit route":"New route"])]));host.appendChild(el("p",{class:"small"},["Add one leg per line you ride: pick the line, then type the station you board and the one you leave. Start typing to see the line's stations. Add another leg for each change."]));rtBuild(host);return}
+  if(REDIT){host.appendChild(el("div",{class:"rthead"},[el("h3",null,[REDIT.i>=0?"Edit route":"New route"])]));host.appendChild(el("p",{class:"small"},["Add one leg per line or train operator you ride: pick it (TfL lines, river and cable car, or a National Rail operator), then type the station you board and the one you leave. Start typing to see the line's stations. Add another leg for each change."]));rtBuild(host);return}
   if(!routes.length){host.appendChild(el("p",{class:"small"},["No saved routes yet. Choose “+ New route” to build one leg by leg. Routes are saved in this browser."]));return}
   var rt=routes[RSEL],infos=rt.legs.map(legInfo),ov=rtOverall(infos);
   var ed=el("button",{type:"button",class:"tb"},["Edit"]),rm=el("button",{type:"button",class:"tb"},["Remove route"]);
@@ -1420,8 +1452,10 @@ function drawRoutes(){var host=document.getElementById("rt-host");if(!host)retur
    b.addEventListener("click",function(){var open=b.getAttribute("aria-expanded")!=="true";b.setAttribute("aria-expanded",String(open));if(open){pn.innerHTML="";pn.appendChild(legReport(r));pn.hidden=false;var pl=host._layers&&host._layers[i];if(pl&&RMAP){RMAP.fitBounds(pl.getBounds(),{padding:[50,50],maxZoom:15});pl.openPopup()}}else pn.hidden=true});
    li.appendChild(b);li.appendChild(pn);ol.appendChild(li)});
   host.appendChild(ol);rtMap(host,infos)})}
-function routesSection(S){return el("section",{id:"routes"},[el("h2",null,["My routes"]),el("p",{class:"lede"},["Build a journey leg by leg, save it, and see it end to end on a map. Each leg is green when nothing is reported, amber for a possible issue and red for a known one. Click a leg on the map, or a leg in the list, for its report. Tube, DLR, Overground, Elizabeth line and Tram legs."]),el("div",{id:"rt-host",class:"card fav"})])}
+function routesSection(S){return el("section",{id:"routes"},[el("h2",null,["My routes"]),el("p",{class:"lede"},["Build a journey leg by leg, save it, and see it end to end on a map. Each leg is green when nothing is reported, amber for a possible issue and red for a known one. Click a leg on the map, or a leg in the list, for its report. Tube, DLR, Overground, Elizabeth line, Tram, river bus and cable car legs follow the line; National Rail operator legs are drawn as a straight line between the two stations."]),el("div",{id:"rt-host",class:"card fav"})])}
 var WX=null,WXT=null;
+function wxU(){try{return localStorage.getItem("lw-unit")==="F"?"F":"C"}catch(e){return"C"}}
+function wxT(c,alt){var f=wxU()==="F";if(alt)f=!f;return f?Math.round(c*9/5+32)+"°F":Math.round(c)+"°C"}
 var WXC={0:["Clear","☀️"],1:["Mostly clear","🌤️"],2:["Partly cloudy","⛅"],3:["Overcast","☁️"],45:["Fog","🌫️"],48:["Freezing fog","🌫️"],51:["Light drizzle","🌦️"],53:["Drizzle","🌦️"],55:["Heavy drizzle","🌧️"],56:["Freezing drizzle","🌧️"],57:["Freezing drizzle","🌧️"],61:["Light rain","🌧️"],63:["Rain","🌧️"],65:["Heavy rain","🌧️"],66:["Freezing rain","🌧️"],67:["Freezing rain","🌧️"],71:["Light snow","🌨️"],73:["Snow","🌨️"],75:["Heavy snow","❄️"],77:["Snow grains","🌨️"],80:["Light showers","🌦️"],81:["Showers","🌧️"],82:["Heavy showers","⛈️"],85:["Snow showers","🌨️"],86:["Heavy snow showers","❄️"],95:["Thunderstorm","⛈️"],96:["Thunderstorm, hail","⛈️"],99:["Thunderstorm, hail","⛈️"]};
 function wxLoad(){return fetchJSON("https://api.open-meteo.com/v1/forecast?latitude=51.5074&longitude=-0.1278&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_gusts_10m,precipitation,relative_humidity_2m&minutely_15=precipitation&hourly=temperature_2m,precipitation_probability,precipitation,weather_code&forecast_days=2&timezone=Europe%2FLondon&wind_speed_unit=mph")}
 function wxChart(vals,labels,max,unit,aria,fmt){var W=400,H=84,l=26,r=4,t=6,b=15,n=vals.length,bw=(W-l-r)/n,g="";
@@ -1432,8 +1466,8 @@ function wxChart(vals,labels,max,unit,aria,fmt){var W=400,H=84,l=26,r=4,t=6,b=15
 function drawWeather(){var host=document.getElementById("wx-host");if(!host)return;
  var paint=function(d){host.innerHTML="";if(!d||!d.current){host.appendChild(el("p",{class:"small"},["Weather is unavailable right now. It will retry shortly."]));return}
   var c=d.current,w=WXC[c.weather_code]||["",""],now=c.time,m=d.minutely_15,h=d.hourly;
-  var nowRow=el("div",{class:"wxnow"},[el("div",{class:"wxbig","aria-hidden":"true"},[w[1]]),el("div",null,[el("div",{class:"wxt"},[Math.round(c.temperature_2m)+"°C"]),el("div",{class:"small"},[w[0]+" in London"])]),
-   el("div",{class:"wxd"},[el("div",null,["Feels like",el("b",null,[Math.round(c.apparent_temperature)+"°C"])]),el("div",null,["Wind",el("b",null,[Math.round(c.wind_speed_10m)+" mph"])]),el("div",null,["Gusts",el("b",null,[Math.round(c.wind_gusts_10m)+" mph"])]),el("div",null,["Humidity",el("b",null,[c.relative_humidity_2m+"%"])])])]);host.appendChild(nowRow);
+  var nowRow=el("div",{class:"wxnow"},[el("div",{class:"wxbig","aria-hidden":"true"},[w[1]]),el("div",null,[el("div",{class:"wxt"},[wxT(c.temperature_2m)]),el("div",{class:"small"},[w[0]+" in London · "+wxT(c.temperature_2m,1)])]),
+   el("div",{class:"wxd"},[el("div",null,["Feels like",el("b",null,[wxT(c.apparent_temperature)+" / "+wxT(c.apparent_temperature,1)])]),el("div",null,["Wind",el("b",null,[Math.round(c.wind_speed_10m)+" mph"])]),el("div",null,["Gusts",el("b",null,[Math.round(c.wind_gusts_10m)+" mph"])]),el("div",null,["Humidity",el("b",null,[c.relative_humidity_2m+"%"])])])]);host.appendChild(nowRow);var tg=el("button",{type:"button",class:"tb","aria-label":"Show temperatures in "+(wxU()==="F"?"Celsius":"Fahrenheit")+" first"},["Show "+(wxU()==="F"?"°C":"°F")+" first"]);tg.addEventListener("click",function(){try{localStorage.setItem("lw-unit",wxU()==="F"?"C":"F")}catch(e){}paint(d)});nowRow.appendChild(tg);
   var i0=0;for(var i=0;i<m.time.length;i++){if(m.time[i]<=now)i0=i}
   var next=m.precipitation.slice(i0,i0+8),times=m.time.slice(i0,i0+8),wet=function(v){return v>=0.1},hhmm=function(t){return t.slice(11,16)},total=next.reduce(function(a,b){return a+(b||0)},0),msg,isWet=false;
   if(wet(next[0])){isWet=true;var k=-1;for(var j=1;j<next.length;j++)if(!wet(next[j])){k=j;break}msg=k<0?"Raining now, and it looks set to continue for the next 2 hours ("+total.toFixed(1)+" mm).":"Raining now, easing around "+hhmm(times[k])+"."}
@@ -1445,7 +1479,7 @@ function drawWeather(){var host=document.getElementById("wx-host");if(!host)retu
   var hi=0;for(var z=0;z<h.time.length;z++){if(h.time[z].slice(0,13)<=now.slice(0,13))hi=z}
   var pr=h.precipitation_probability.slice(hi,hi+24),ht=h.time.slice(hi,hi+24),pk=0;pr.forEach(function(v,i){if(v>pr[pk])pk=i});
   var c2=el("div",{class:"wxch"},[el("div",{class:"dsub"},["Chance of rain, next 24 h · % per hour"])]),d2=el("div");
-  d2.innerHTML=wxChart(pr.map(function(v){return v||0}),ht.map(function(t,i){return{lab:i%3===0?hhmm(t):"",toString:function(){return hhmm(t)+" · "+Math.round(h.temperature_2m[hi+i])+"°C, "+h.precipitation[hi+i]+" mm"}}}),100,"%","Chance of rain per hour for the next 24 hours. Highest "+pr[pk]+" percent around "+hhmm(ht[pk])+".",function(v){return Math.round(v)+""});
+  d2.innerHTML=wxChart(pr.map(function(v){return v||0}),ht.map(function(t,i){return{lab:i%3===0?hhmm(t):"",toString:function(){return hhmm(t)+" · "+wxT(h.temperature_2m[hi+i])+" / "+wxT(h.temperature_2m[hi+i],1)+", "+h.precipitation[hi+i]+" mm"}}}),100,"%","Chance of rain per hour for the next 24 hours. Highest "+pr[pk]+" percent around "+hhmm(ht[pk])+".",function(v){return Math.round(v)+""});
   c2.appendChild(d2);charts.appendChild(c2);c2.querySelector(".dsub").textContent+=pr[pk]>0?" · peak "+pr[pk]+"% at "+hhmm(ht[pk]):" · none expected";
   host.appendChild(el("p",{class:"small wxsrc"},["Central London · ",el("a",{href:"https://open-meteo.com/",rel:"noopener"},["Open-Meteo"])," (CC BY 4.0) · updated "+hhmm(now)]))};
  if(WX)paint(WX);wxLoad().then(function(d){if(d)WX=d;paint(WX)});

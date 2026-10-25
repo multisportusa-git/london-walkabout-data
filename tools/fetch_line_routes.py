@@ -18,7 +18,7 @@ import urllib.parse
 import urllib.request
 
 API = "https://api.tfl.gov.uk"
-MODES = "tube,dlr,overground,elizabeth-line,tram"
+MODES = "tube,dlr,overground,elizabeth-line,tram,river-bus,cable-car"
 MIN_LINES = 10  # the real set has ~20
 
 

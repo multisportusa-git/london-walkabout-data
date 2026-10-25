@@ -303,5 +303,32 @@ class LineRoutesPublishTests(unittest.TestCase):
             self.assertEqual(json.loads((out / "rollups" / "lineRoutes.json").read_text()), {"lines": {}, "stops": {}})
 
 
+class NrStationsPublishTests(unittest.TestCase):
+    """The route builder fetches rollups/nrStations.json: it must always exist and merge every day."""
+
+    def rec(self, *items):
+        return {"slot": "x", "changed": [{"crsCode": c, "name": n, "location": {"latitude": la, "longitude": lo}, "stationOperator": {"slug": op}} for c, n, la, lo, op in items]}
+
+    def test_empty_when_no_dataset(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "data").mkdir(); out = Path(d) / "out"
+            aggregate.publish_nr_stations(str(Path(d) / "data"), str(out))
+            self.assertEqual(json.loads((out / "rollups" / "nrStations.json").read_text()), {"s": {}})
+
+    def test_merges_days_later_wins_and_skips_bad_records(self):
+        import gzip
+        with tempfile.TemporaryDirectory() as d:
+            ds = Path(d) / "data" / "nationalRailStations"; ds.mkdir(parents=True); out = Path(d) / "out"
+            with gzip.open(ds / "2026-10-24.ndjson.gz", "wt") as fh:
+                fh.write(json.dumps(self.rec(("CTN", "Charlton", 51.48876, 0.03139, "southeastern"), ("LBG", "London Bridge", 51.5, -0.08, "southern"))) + "\n")
+                fh.write("not json\n")
+            (ds / "2026-10-25.ndjson").write_text(json.dumps(self.rec(("LBG", "London Bridge", 51.50505, -0.08604, "thameslink"))) + "\n"
+                                                  + json.dumps({"changed": [{"crsCode": "BAD"}]}) + "\n")
+            aggregate.publish_nr_stations(str(Path(d) / "data"), str(out))
+            j = json.loads((out / "rollups" / "nrStations.json").read_text())
+            self.assertEqual(sorted(j["s"]), ["CTN", "LBG"])
+            self.assertEqual(j["s"]["LBG"], ["London Bridge", 51.50505, -0.08604, "thameslink"])
+
+
 if __name__ == "__main__":
     unittest.main()
