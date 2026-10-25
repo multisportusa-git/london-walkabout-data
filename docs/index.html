@@ -1021,7 +1021,7 @@ function planText(it){if(!UP||!UP.built)return"Planned works: after the first da
  return"Planned: "+ds.slice(0,3).map(dayLbl).join(", ")+(ds.length>3?" +"+(ds.length-3)+" more":"")+(dm[ds[0]].s?" · "+dm[ds[0]].s:"")}
 var NRR;
 function loadNRR(){if(NRR!==undefined)return;NRR=null;fetchJSON("rollups/nrReasons.json?"+Date.now()).then(function(j){NRR=j&&(j.canc||j.late)?j:{};if(document.getElementById("nr-host")&&RS)drawNR()})}
-function rtxt(t,code){var m=NRR&&NRR[t];return m&&m[code]?m[code]:"Reason code "+code}
+function rtxt(t,code){var m=NRR&&NRR[t],s=m&&m[code];if(!s)return "Reason code "+code;s=s.replace(/^This (?:service|train) has been (?:cancelled|delayed) (?:because of|by|due to) /i,"");return s.charAt(0).toUpperCase()+s.slice(1)}
 function rsum(m){var n=0;Object.keys(m||{}).forEach(function(k){n+=m[k]});return n}
 function reasonBars(t,title,map,total){var ks=Object.keys(map).sort(function(a,b){return map[b]-map[a]}),mx=ks.length?map[ks[0]]:1,top=ks.slice(0,8);
  return el("div",{class:"rcol"},[el("div",{class:"dsub"},[title]),el("p",{class:"small"},[nf(rsum(map))+(total!=null?" of "+nf(total):"")+" trains with a reason given"]),
