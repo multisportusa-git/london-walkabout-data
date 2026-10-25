@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aggregate import line_statuses, line_worst, line_mode, tidy_reason  # noqa: E402
 from collect import DATASETS as ALL_DATASETS, DAILY_AT_UTC  # noqa: E402
 
-VERSION = 4  # bump to rebuild every day file when the format changes
+VERSION = 5  # bump to rebuild every day file when the format changes
 GO_LIVE = "2026-10-24T21:00:00Z"   # new collector took over (old Claude task before this)
 INCIDENT = ["2026-09-22T15:00:00Z", "2026-09-25T15:00:00Z"]
 READ = ["lineStatus", "busLineStatus", "liftDisruptions", "stopDisruptions", "crowdingReadings",
@@ -150,6 +150,59 @@ def nr_board(rec):
     return tot, canc, late
 
 
+def nr_detail(rec, h, nrs, nro, blank):
+    """Per station (CRS) and per operator: departures, cancelled, 5+ min late; per station mean loading %."""
+    F = rec.get("fields") or []
+    ix = {f: F.index(f) for f in ("std", "etd", "isCancelled", "operatorCode", "loadingPct") if f in F}
+    if len(ix) < 4: return
+    for crs, b in (rec.get("stations") or {}).items():
+        svs = (b or {}).get("services")
+        if svs is None:   # board unavailable this hour
+            continue
+        S = nrs.setdefault(crs, {"d": blank(), "c": blank(), "l": blank(), "ld": blank()})
+        if S["d"][h] is None: S["d"][h], S["c"][h], S["l"][h] = 0, 0, 0
+        ld = []
+        for sv in svs:
+            op = sv[ix["operatorCode"]] or "?"
+            O = nro.setdefault(op, {"d": blank(), "c": blank(), "l": blank()})
+            late = 0
+            canc = 1 if sv[ix["isCancelled"]] else 0
+            if not canc:
+                try:
+                    late = 1 if (datetime.datetime.fromisoformat(sv[ix["etd"]]) - datetime.datetime.fromisoformat(sv[ix["std"]])).total_seconds() >= 300 else 0
+                except Exception:
+                    late = 0
+            for X in (S, O):
+                X["d"][h] = (X["d"][h] or 0) + 1; X["c"][h] = (X["c"][h] or 0) + canc; X["l"][h] = (X["l"][h] or 0) + late
+            if "loadingPct" in ix and isinstance(sv[ix["loadingPct"]], (int, float)): ld.append(sv[ix["loadingPct"]])
+        if ld: S["ld"][h] = round(sum(ld) / len(ld), 1)
+
+
+def roll_bus_day(data, day):
+    """Bus routes for one day: totals per hour and, for each disrupted route, the kind of disruption per hour and TfL's messages."""
+    blank = lambda: [None] * 24
+    out = {"day": day, "v": VERSION, "t": blank(), "g": blank(), "routes": {}}
+    for s, r in read_day(data, "busLineStatus", day).items():
+        h = H(s); tot = r.get("totalLines")
+        if not isinstance(tot, int): continue
+        D = [x for x in r.get("disrupted") or [] if isinstance(x, dict) and x.get("id")]
+        good = r.get("goodServiceCount")
+        out["t"][h], out["g"][h] = tot, good if isinstance(good, int) else tot - len(D)
+        for x in D:
+            e = out["routes"].setdefault(x["id"], {"k": blank(), "r": {}, "rk": {}})
+            hk = None
+            for st in x.get("statuses") or []:
+                if not isinstance(st, dict) or st.get("severity") == 10: continue
+                kind = status_kind(st, None)
+                k = clip(re.sub(r"\s+", " ", (st.get("reason") or st.get("description") or "No reason given")).strip())
+                hours = e["r"].setdefault(k, [])
+                if not hours or hours[-1] != h: hours.append(h)
+                if KIND_RANK[kind] > KIND_RANK.get(e["rk"].get(k), 0): e["rk"][k] = kind
+                if KIND_RANK[kind] > KIND_RANK.get(hk, 0): hk = kind
+            e["k"][h] = hk or "u"
+    return out
+
+
 def roll_day(data, day, look=None):
     blank = lambda: [None] * 24
     m = {k: blank() for k in ("busGood", "busTotal", "nrDeps", "nrCanc", "nrLate", "nrInc", "nrUnpl",
@@ -204,10 +257,12 @@ def roll_day(data, day, look=None):
             if isinstance(v, dict) and v.get("dataAvailable") is not False and isinstance(p, (int, float)):
                 crowd.setdefault(sid, blank())[H(s)] = round(100 * p, 1)
         seen.setdefault("crowdingReadings", set()).add(H(s))
+    nrs, nro = {}, {}
     for s, r in read_day(data, "nationalRailDepartures", day).items():
         b = nr_board(r)
         if b:
             m["nrDeps"][H(s)], m["nrCanc"][H(s)], m["nrLate"][H(s)] = b
+            nr_detail(r, H(s), nrs, nro, blank)
         seen.setdefault("nationalRailDepartures", set()).add(H(s))
     for s, r in read_day(data, "nationalRailIncidents", day).items():
         if isinstance(r.get("count"), int):
@@ -236,7 +291,7 @@ def roll_day(data, day, look=None):
         n = sum(os.path.getsize(p) for p in day_files(data, ds, day))
         if n: size[ds] = n
     return {"day": day, "v": VERSION, "src": src_sizes(data, day), "lines": lines, "m": m, "crowd": crowd, "cov": cov,
-            "runs": runs, "bytes": size}
+            "runs": runs, "bytes": size, "nrs": nrs, "nro": nro}
 
 
 def update(data):
@@ -263,6 +318,11 @@ def update(data):
         except (OSError, ValueError):
             pass
         R = roll_day(data, day, look)
+        bdir = os.path.join(data, "_rollup", "bus"); os.makedirs(bdir, exist_ok=True)
+        if day_files(data, "busLineStatus", day):
+            with open(os.path.join(bdir, day + ".json.tmp"), "w", encoding="utf-8") as fh:
+                json.dump(roll_bus_day(data, day), fh, separators=(",", ":"))
+            os.replace(os.path.join(bdir, day + ".json.tmp"), os.path.join(bdir, day + ".json"))
         tmp = p + ".tmp"
         with open(tmp, "w", encoding="utf-8") as fh:
             json.dump(R, fh, separators=(",", ":"))
@@ -291,8 +351,10 @@ def index(data):
             h = (0 if v else None) if not isinstance(v, list) else next((i for i, x in enumerate(v) if x), None)
             if h is not None: cov_first[ds] = f"{day}T{h:02d}:00:00Z"
     live = go_live_health(d, days, cov_first)
+    bd = os.path.join(data, "_rollup", "bus")
+    bus_days = sorted(f[:10] for f in os.listdir(bd) if f.endswith(".json")) if os.path.isdir(bd) else []
     return {"v": VERSION, "days": days, "first": days[0] if days else None, "last": days[-1] if days else None, "live": live,
-            "firstSlot": first_slot, "covFirst": cov_first, "bytes": total, "goLive": GO_LIVE, "incident": INCIDENT}
+            "firstSlot": first_slot, "covFirst": cov_first, "busDays": bus_days, "bytes": total, "goLive": GO_LIVE, "incident": INCIDENT}
 
 
 def go_live_health(d, days, cov_first):

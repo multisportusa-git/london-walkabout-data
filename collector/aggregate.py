@@ -823,6 +823,11 @@ def publish_rollups(data_dir, out_dir):
         for f in os.listdir(src):
             if f.endswith(".json"):
                 shutil.copyfile(os.path.join(src, f), os.path.join(dst, f))
+        bsrc, bdst = os.path.join(data_dir, "_rollup", "bus"), os.path.join(out_dir, "rollups", "bus")
+        if os.path.isdir(bsrc):
+            os.makedirs(bdst, exist_ok=True)
+            for f in os.listdir(bsrc):
+                if f.endswith(".json"): shutil.copyfile(os.path.join(bsrc, f), os.path.join(bdst, f))
         with open(os.path.join(out_dir, "rollups", "index.json"), "w", encoding="utf-8") as fh:
             json.dump(rollup.index(data_dir), fh, separators=(",", ":"))
         print(f"rollups: {len(os.listdir(dst))} day files published")

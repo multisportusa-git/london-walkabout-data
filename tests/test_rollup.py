@@ -35,14 +35,16 @@ def sample(d):
                                                                           "nrIncident": {"summary": "CLEARED: lines reopened at Barking", "planned": False}}]},
             {"id": "jubilee", "name": "Jubilee", "mode": "tube", "statuses": [{"severity": 9, "description": "Minor Delays", "reason": "Minor delays due to a signal failure",
                                                                                "disruption": {"category": "RealTime"}}]}]}])
-    put(d, "busLineStatus", DAY, [{"slot": f"{DAY}T09:00:00Z", "totalLines": 675, "goodServiceCount": 470, "disrupted": []}], gz=True)
+    put(d, "busLineStatus", DAY, [{"slot": f"{DAY}T09:00:00Z", "totalLines": 675, "goodServiceCount": 470, "disrupted": [
+        {"id": "100", "name": "100", "statuses": [{"severity": 0, "description": "Special Service", "reason": "Road closed  due to water works. Buses diverted.",
+                                                   "disruption": {"category": "PlannedWork"}}]}]}], gz=True)
     put(d, "liftDisruptions", DAY, [{"slot": f"{DAY}T09:00:00Z", "count": 2, "disruptions": [{"stationUniqueId": "A"}, {"stationUniqueId": "A"}]}])
     put(d, "stopDisruptions", DAY, [{"slot": f"{DAY}T09:00:00Z", "disruptions": [{"atcoCode": "X"}, {"atcoCode": "Y"}, {"atcoCode": "Y"}]}])
     put(d, "crowdingReadings", DAY, [{"slot": f"{DAY}T09:00:00Z", "stations": {"bank": {"dataAvailable": True, "percentageOfBaseline": 0.254},
                                                                               "oval": {"dataAvailable": False, "percentageOfBaseline": 0}}}])
-    put(d, "nationalRailDepartures", DAY, [{"slot": f"{DAY}T09:00:00Z", "fields": ["std", "etd", "isCancelled"], "stations": {"VIC": {"services": [
-        ["2026-10-25T09:00:00", "2026-10-25T09:00:00", False], ["2026-10-25T09:05:00", "2026-10-25T09:12:00", False],
-        ["2026-10-25T09:10:00", None, True]]}}}], gz=True)
+    put(d, "nationalRailDepartures", DAY, [{"slot": f"{DAY}T09:00:00Z", "fields": ["std", "etd", "isCancelled", "operatorCode", "loadingPct"], "stations": {"VIC": {"services": [
+        ["2026-10-25T09:00:00", "2026-10-25T09:00:00", False, "SN", 20], ["2026-10-25T09:05:00", "2026-10-25T09:12:00", False, "SN", 40],
+        ["2026-10-25T09:10:00", None, True, "SE", None]]}, "CHX": {"services": None}}}], gz=True)
     put(d, "nationalRailIncidents", DAY, [{"slot": f"{DAY}T09:00:00Z", "count": 10, "planned": 7}], gz=True)
     put(d, "_health", DAY, [{"slot": f"{DAY}T09:00:00Z", "startedAt": f"{DAY}T09:00:18Z", "durationS": 249.4, "requests": 120, "retries": 2,
                              "http429": 0, "keyUsed": True, "nrStatus": {"200": 32, "500": 2},
@@ -83,6 +85,14 @@ class RollupTests(unittest.TestCase):
                              (9, f"{DAY}T09:00:18Z", 249.4, 120, 2, 0, True, {"200": 32, "500": 2}, ["crowdingNetwork"]))
             self.assertGreater(R["bytes"]["lineStatus"], 0)
             self.assertNotIn("arrivalsNetwork", R["bytes"])          # no file that day -> no entry
+            self.assertEqual((R["nrs"]["VIC"]["d"][9], R["nrs"]["VIC"]["c"][9], R["nrs"]["VIC"]["l"][9]), (3, 1, 1))
+            B = json.loads((Path(d) / "_rollup" / "bus" / f"{DAY}.json").read_text())
+            self.assertEqual((B["t"][9], B["g"][9]), (675, 470))
+            self.assertEqual(B["routes"]["100"]["r"], {"Road closed due to water works. Buses diverted.": [9]})
+            self.assertEqual((B["routes"]["100"]["k"][9], B["routes"]["100"]["rk"]["Road closed due to water works. Buses diverted."]), ("p", "p"))
+            self.assertEqual(R["nrs"]["VIC"]["ld"][9], 30.0)
+            self.assertEqual((R["nro"]["SN"]["d"][9], R["nro"]["SN"]["l"][9], R["nro"]["SE"]["c"][9]), (2, 1, 1))
+            self.assertNotIn("CHX", R["nrs"])          # board unavailable that hour: no figures
 
     def test_rebuild_only_when_sources_change_and_never_removes_days(self):
         with tempfile.TemporaryDirectory() as d:
