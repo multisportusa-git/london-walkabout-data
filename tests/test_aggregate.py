@@ -253,5 +253,30 @@ class NrReasonsPublishTests(unittest.TestCase):
             self.assertEqual(json.loads((out / "rollups" / "nrReasons.json").read_text()), {})
 
 
+class BusRoutesPublishTests(unittest.TestCase):
+    """The page always fetches rollups/busRoutes.json: it must exist even before the list has been fetched."""
+
+    def test_empty_list_when_no_reference_file(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "data").mkdir(); out = Path(d) / "out"
+            aggregate.publish_bus_routes(str(Path(d) / "data"), str(out))
+            self.assertEqual(json.loads((out / "rollups" / "busRoutes.json").read_text()), {"routes": []})
+
+    def test_copies_the_reference_file_when_present(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "data").mkdir(); (Path(d) / "config").mkdir(); out = Path(d) / "out"
+            ref = {"routes": ["1", "100", "N29"], "fetched": "2026-10-25"}
+            (Path(d) / "config" / "busRoutes.json").write_text(json.dumps(ref))
+            aggregate.publish_bus_routes(str(Path(d) / "data"), str(out))
+            self.assertEqual(json.loads((out / "rollups" / "busRoutes.json").read_text()), ref)
+
+    def test_broken_reference_file_gives_empty_list_not_an_error(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "data").mkdir(); (Path(d) / "config").mkdir(); out = Path(d) / "out"
+            (Path(d) / "config" / "busRoutes.json").write_text("{nope")
+            aggregate.publish_bus_routes(str(Path(d) / "data"), str(out))
+            self.assertEqual(json.loads((out / "rollups" / "busRoutes.json").read_text()), {"routes": []})
+
+
 if __name__ == "__main__":
     unittest.main()

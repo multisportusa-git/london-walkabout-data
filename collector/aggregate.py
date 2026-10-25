@@ -817,6 +817,7 @@ def main():
     print(f"wrote {out} ({os.path.getsize(out)} bytes), latest.json; dataThrough={last_global}")
     publish_rollups(a.data, a.out)
     publish_nr_reasons(a.data, a.out)
+    publish_bus_routes(a.data, a.out)
     publish_upcoming(a.data, a.out)
 
 
@@ -977,6 +978,24 @@ def publish_nr_reasons(data_dir, out_dir):
         pass
     os.makedirs(os.path.join(out_dir, "rollups"), exist_ok=True)
     with open(os.path.join(out_dir, "rollups", "nrReasons.json"), "w", encoding="utf-8") as fh:
+        json.dump(ref, fh, separators=(",", ":"), ensure_ascii=False)
+
+
+def publish_bus_routes(data_dir, out_dir):
+    """Every London bus route id for the favourites picker, as rollups/busRoutes.json {"routes": [...], "fetched": day},
+    copied from config/busRoutes.json (next to the data folder). The bus rollups only name routes that have a notice,
+    so this full list comes from TfL's route list (tools/fetch_bus_routes.py). Always written ({"routes": []} until
+    that file exists or if it is unreadable) so the page's request never 404s."""
+    ref = {"routes": []}
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(data_dir)), "config", "busRoutes.json"), encoding="utf-8") as fh:
+            j = json.load(fh)
+        if isinstance(j, dict) and isinstance(j.get("routes"), list):
+            ref = j
+    except (OSError, ValueError):
+        pass
+    os.makedirs(os.path.join(out_dir, "rollups"), exist_ok=True)
+    with open(os.path.join(out_dir, "rollups", "busRoutes.json"), "w", encoding="utf-8") as fh:
         json.dump(ref, fh, separators=(",", ":"), ensure_ascii=False)
 
 

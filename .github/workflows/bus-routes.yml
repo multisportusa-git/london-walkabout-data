@@ -1,0 +1,59 @@
+name: bus-routes
+
+# Weekly refresh of the full London bus route list (config/busRoutes.json) for the dashboard's favourites picker.
+# Append-only: commits only when a new route appears, never removes one. The TfL app key is read keylessly from
+# Secret Manager (masked in logs). Zero LLM tokens. The hourly collect run (or site.yml) republishes the page.
+on:
+  schedule:
+    - cron: '41 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: bus-routes
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Sign in to Google Cloud (keyless)
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SA_EMAIL }}
+      - name: Read the TfL app key from Secret Manager
+        id: keys
+        uses: google-github-actions/get-secretmanager-secrets@v3
+        with:
+          secrets: |-
+            tfl:london-commuter-broker/tfl-app-key
+      - name: Fetch the route list
+        env:
+          TFL_APP_KEY: ${{ steps.keys.outputs.tfl }}
+        run: python3 tools/fetch_bus_routes.py --out config/busRoutes.json
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- config/busRoutes.json && [ -z "$(git ls-files --others --exclude-standard config/busRoutes.json)" ]; then
+            echo "no change"; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add config/busRoutes.json
+          git commit -m "config: refresh the London bus route list"
+          for i in 1 2 3 4 5; do
+            git pull --rebase -q && git push -q origin HEAD:${{ github.ref_name }} && exit 0
+            git rebase --abort 2>/dev/null || true
+            sleep $((i * 10))
+          done
+          echo "push failed" >&2; exit 1
