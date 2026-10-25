@@ -29,7 +29,11 @@ jobs:
       changed: ${{ steps.commit.outputs.changed }}
       rc: ${{ steps.collect.outputs.rc }}
     steps:
+      # ref = the branch, so a run that waited in the concurrency queue starts from the branch tip at
+      # job start, not the commit that was main when it was queued (that caused push conflicts).
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
