@@ -282,7 +282,7 @@ section.sx.closed .sb{display:none}section.sx.closed .sh .lede{display:none}
 .srch input:focus{outline:2px solid var(--accent);outline-offset:1px}
 .srch-list{display:none;position:absolute;left:0;right:0;top:44px;z-index:20;background:var(--card);border:1px solid var(--rule);border-radius:12px;box-shadow:0 14px 40px #0000003a;max-height:360px;overflow:auto;padding:4px}
 .srch-o{font:inherit;display:flex;justify-content:space-between;gap:10px;width:100%;text-align:left;background:none;border:0;border-radius:8px;padding:8px 10px;color:var(--ink);cursor:pointer}.srch-o span{color:var(--sub);font-size:12px;white-space:nowrap}.srch-o:hover,.srch-o.on{background:color-mix(in srgb,var(--accent) 12%,transparent)}.srch-o.none{color:var(--sub);cursor:default}
-.lwmap{height:460px;border-radius:16px;overflow:hidden;border:1px solid var(--rule);margin-top:6px;z-index:1}@media (max-width:560px){.lwmap{height:360px}}
+.lwmap.dark-tiles .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.6)}.lwmap{height:460px;border-radius:16px;overflow:hidden;border:1px solid var(--rule);margin-top:6px;z-index:1}@media (max-width:560px){.lwmap{height:360px}}
 .leaflet-popup-content{font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:13px}.leaflet-popup-content .fchip{margin-top:6px}
 .info-b{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;margin-left:6px;font-size:10px;font-weight:800;font-style:italic;font-family:Georgia,serif;letter-spacing:0;text-transform:none;background:var(--cm);color:var(--ink);cursor:help;vertical-align:1px}
 .info-b:hover,.info-b:focus-visible{background:var(--accent);color:#fff;outline:none}.info-t{margin:2px 0 4px!important;font-size:12px!important;color:var(--ink)!important;background:var(--bg);border-radius:10px;padding:8px 10px}
@@ -1148,7 +1148,7 @@ function initSearch(){var box=document.getElementById("srch");if(!box||box.datas
  box.appendChild(inp);box.appendChild(list)}
 /* ---------- map ---------- */
 var COORD=null,LMAP=null,MAPL="lifts";
-function mapSection(){return el("section",{id:"map"},[el("h2",null,["Map"]),el("p",{class:"lede"},["Where lifts are out, where stations are busiest and where notices apply, for the chosen range. Tap a station for detail."]),el("div",{id:"map-host"},[el("div",{class:"card small skel"},["Loading the map…"])])])}
+function mapSection(){return el("section",{id:"map"},[el("h2",null,["Map"]),el("p",{class:"lede"},["Where lifts are out, where stations are busiest and where notices apply, for the chosen range. Tap a station for detail. Map data © OpenStreetMap contributors."]),el("div",{id:"map-host"},[el("div",{class:"card small skel"},["Loading the map…"])])])}
 function loadLeaflet(){if(window.L)return Promise.resolve();return new Promise(function(res,rej){var c=document.createElement("link");c.rel="stylesheet";c.href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";document.head.appendChild(c);var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 function drawMap(){var host=document.getElementById("map-host");if(!host||!RS)return;var sct=document.getElementById("map");if(sct&&sct.classList.contains("closed"))return;
  Promise.all([loadLeaflet(),COORD?Promise.resolve():fetchJSON("stationCoords.json").then(function(j){COORD=j||{}}),loadCN(),loadCNR(winOf().ps,winOf().w.e)]).then(function(){
@@ -1156,7 +1156,7 @@ function drawMap(){var host=document.getElementById("map-host");if(!host||!RS)re
   var mapEl=el("div",{id:"lwmap",class:"lwmap",role:"region","aria-label":"Map of London stations"}),leg=el("div",{class:"legend"});host.appendChild(tabs);host.appendChild(mapEl);host.appendChild(leg);
   if(LMAP){LMAP.remove();LMAP=null}LMAP=L.map(mapEl,{scrollWheelZoom:false,attributionControl:true}).setView([51.51,-0.12],11);
   var dark=(document.documentElement.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"))==="dark";
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/"+(dark?"dark_all":"light_all")+"/{z}/{x}/{y}{r}.png",{maxZoom:18,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'}).addTo(LMAP);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(LMAP);mapEl.classList.toggle("dark-tiles",dark);
   var pts=[],css=getComputedStyle(document.documentElement),col=function(v){return css.getPropertyValue(v).trim()||"#888"};
   if(MAPL==="lifts"){var a=aggKey(w.s,w.e,"lf",function(x,h){return x.o[h]}).A,mx=1;Object.keys(a).forEach(function(k){mx=Math.max(mx,a[k].sum)});
    Object.keys(a).forEach(function(k){var Y=a[k],c=COORD[k];if(!c||!Y.hrs)return;pts.push({ll:[c[0],c[1]],r:6+14*Math.sqrt(Y.sum/mx),c:Y.hrs>=w.H*.9?col("--c4"):col("--c2"),t:stName(knownName(k)||Y.n),d:nf(Y.sum)+" lift-hours out, "+nf(Y.hrs)+" h affected",go:function(){PF.lf.q=stName(knownName(k)||Y.n);PF.lf.sel=k;openSec("lifts");drawLifts2()}})});
