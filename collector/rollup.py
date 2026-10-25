@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aggregate import line_statuses, line_worst, line_mode, tidy_reason  # noqa: E402
 from collect import DATASETS as ALL_DATASETS, DAILY_AT_UTC  # noqa: E402
 
-VERSION = 3  # bump to rebuild every day file when the format changes
+VERSION = 4  # bump to rebuild every day file when the format changes
 GO_LIVE = "2026-10-24T21:00:00Z"   # new collector took over (old Claude task before this)
 INCIDENT = ["2026-09-22T15:00:00Z", "2026-09-25T15:00:00Z"]
 READ = ["lineStatus", "busLineStatus", "liftDisruptions", "stopDisruptions", "crowdingReadings",
@@ -92,9 +92,39 @@ def clip(t, n=480):
     return t if len(t) <= n else t[:n].rsplit(" ", 1)[0] + "…"
 
 
-def reason_key(st, name):
+INFO_RE = re.compile(r"^\W*(cleared|lines? (have )?re-?opened|normal service|services? (has |have )?resumed)", re.I)
+KIND_RANK = {"u": 3, "p": 2, "i": 1}
+
+
+def incident_of(st, look):
+    """The National Rail incident behind a link-only status: stored with it (from 25 Oct) or looked up in the KB archive."""
     inc = st.get("nrIncident")
     if isinstance(inc, dict) and inc.get("summary"):
+        return inc
+    r = (st.get("reason") or "").strip()
+    if look and re.match(r"https?://", r):
+        x = look(r)
+        if x:
+            return {"summary": x.get("summary"), "planned": x.get("planned")}
+    return None
+
+
+def status_kind(st, inc):
+    """u = unplanned disruption, p = planned works, i = information only (e.g. a cleared incident)."""
+    if inc is not None or re.match(r"https?://", (st.get("reason") or "").strip()):
+        if not inc: return "u"
+        if INFO_RE.search(inc.get("summary") or ""): return "i"
+        return "p" if inc.get("planned") else "u"
+    cat = (st.get("disruption") or {}).get("category")
+    if cat == "PlannedWork": return "p"
+    if cat == "Information": return "i"
+    if cat == "RealTime": return "u"
+    return "p" if st.get("description") in ("Planned Closure", "Part Closure") else "u"
+
+
+def reason_key(st, name, inc=None):
+    inc = inc or (st.get("nrIncident") if isinstance(st.get("nrIncident"), dict) else None)
+    if inc and inc.get("summary"):
         return clip(inc["summary"])
     r = (st.get("reason") or "").strip()
     if re.match(r"https?://", r):
@@ -120,7 +150,7 @@ def nr_board(rec):
     return tot, canc, late
 
 
-def roll_day(data, day):
+def roll_day(data, day, look=None):
     blank = lambda: [None] * 24
     m = {k: blank() for k in ("busGood", "busTotal", "nrDeps", "nrCanc", "nrLate", "nrInc", "nrUnpl",
                               "lifts", "liftStations", "notices", "noticeStations")}
@@ -137,9 +167,18 @@ def roll_day(data, day):
             cat = line_worst(line_statuses(x))[0]
             e["c"][h] = cat
             if cat not in (0, 5, None):   # 5 = closed for the night: not a disruption
-                for k in {reason_key(st, e["n"]) for st in x.get("statuses") or [] if isinstance(st, dict)
-                          and st.get("severity") != 10 and st.get("description") != "Good Service"}:
-                    e["r"].setdefault(k, []).append(h)   # hours (UTC) this message applied
+                hk, done = None, set()
+                for st in x.get("statuses") or []:
+                    if not isinstance(st, dict) or st.get("severity") == 10 or st.get("description") == "Good Service":
+                        continue
+                    inc = incident_of(st, look)
+                    k, kind = reason_key(st, e["n"], inc), status_kind(st, inc)
+                    if k not in done:
+                        e["r"].setdefault(k, []).append(h); done.add(k)   # hours (UTC) this message applied
+                    rk = e.setdefault("rk", {})
+                    if KIND_RANK[kind] > KIND_RANK.get(rk.get(k), 0): rk[k] = kind
+                    if KIND_RANK[kind] > KIND_RANK.get(hk, 0): hk = kind
+                e.setdefault("k", blank())[h] = hk or "u"
         seen.setdefault("lineStatus", set()).add(h)
     for s, r in read_day(data, "busLineStatus", day).items():
         tot = r.get("totalLines")
@@ -204,7 +243,16 @@ def update(data):
     """Build missing or stale day rollups. Returns the days written."""
     out_dir = os.path.join(data, "_rollup", "day")
     os.makedirs(out_dir, exist_ok=True)
-    built = []
+    built, cache = [], {}
+
+    def look(url):   # KB incident archive, loaded once and only if a day needs it
+        if "f" not in cache:
+            try:
+                from aggregate import nr_incident_lookup
+                cache["f"] = nr_incident_lookup(data)
+            except Exception:
+                cache["f"] = lambda u: None
+        return cache["f"](url)
     for day in all_days(data):
         p = os.path.join(out_dir, day + ".json")
         try:
@@ -214,7 +262,7 @@ def update(data):
                 continue
         except (OSError, ValueError):
             pass
-        R = roll_day(data, day)
+        R = roll_day(data, day, look)
         tmp = p + ".tmp"
         with open(tmp, "w", encoding="utf-8") as fh:
             json.dump(R, fh, separators=(",", ":"))

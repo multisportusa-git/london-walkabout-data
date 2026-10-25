@@ -30,7 +30,11 @@ def sample(d):
                                                                                       "nrIncident": {"summary": "Delays at Wivelsfield"}}]}]},
         {"slot": f"{DAY}T09:00:00Z", "lines": [
             {"id": "circle", "name": "Circle", "mode": "tube", "statuses": [{"severity": 5, "description": "Part Closure", "reason": "CIRCLE LINE: no service between A and B"}]},
-            {"id": "southern", "name": "Southern", "mode": "national-rail", "statuses": [{"severity": 10, "description": "Good Service"}]}]}])
+            {"id": "southern", "name": "Southern", "mode": "national-rail", "statuses": [{"severity": 10, "description": "Good Service"}]},
+            {"id": "c2c", "name": "c2c", "mode": "national-rail", "statuses": [{"severity": 0, "description": "Special Service", "reason": "https://x/y/",
+                                                                          "nrIncident": {"summary": "CLEARED: lines reopened at Barking", "planned": False}}]},
+            {"id": "jubilee", "name": "Jubilee", "mode": "tube", "statuses": [{"severity": 9, "description": "Minor Delays", "reason": "Minor delays due to a signal failure",
+                                                                               "disruption": {"category": "RealTime"}}]}]}])
     put(d, "busLineStatus", DAY, [{"slot": f"{DAY}T09:00:00Z", "totalLines": 675, "goodServiceCount": 470, "disrupted": []}], gz=True)
     put(d, "liftDisruptions", DAY, [{"slot": f"{DAY}T09:00:00Z", "count": 2, "disruptions": [{"stationUniqueId": "A"}, {"stationUniqueId": "A"}]}])
     put(d, "stopDisruptions", DAY, [{"slot": f"{DAY}T09:00:00Z", "disruptions": [{"atcoCode": "X"}, {"atcoCode": "Y"}, {"atcoCode": "Y"}]}])
@@ -58,6 +62,10 @@ class RollupTests(unittest.TestCase):
             self.assertEqual(c["r"], {"no service between A and B": [8, 9]})
             s = R["lines"]["southern"]
             self.assertEqual((s["c"][8], s["c"][9], s["r"]), (2, 0, {"Delays at Wivelsfield": [8]}))
+            self.assertEqual((c["k"][8], c["k"][9], c["rk"]), ("p", "p", {"no service between A and B": "p"}))   # Part Closure, no category: planned
+            self.assertEqual((s["k"][8], s["k"][9]), ("u", None))          # NR incident, not planned: unplanned
+            self.assertEqual((R["lines"]["c2c"]["k"][9], R["lines"]["c2c"]["rk"]), ("i", {"CLEARED: lines reopened at Barking": "i"}))
+            self.assertEqual(R["lines"]["jubilee"]["k"][9], "u")
             m = R["m"]
             self.assertEqual((m["busGood"][9], m["busTotal"][9], m["busGood"][8]), (470, 675, None))
             self.assertEqual((m["lifts"][9], m["liftStations"][9]), (2, 1))
