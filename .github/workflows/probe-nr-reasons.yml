@@ -1,0 +1,81 @@
+name: probe-nr-reasons
+
+# One-off, manual. Checks whether the existing Live Departure Board - Staff Version key can call the
+# reason-code list (GetReasonCodeList / GetReasonCode). Prints only HTTP status and response shape.
+# The key is read keylessly from Secret Manager (masked in logs) and travels only in the x-apikey header.
+# Collects nothing and commits nothing.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Sign in to Google Cloud (keyless)
+        id: gcp
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SA_EMAIL }}
+      - name: Read the LDB Staff key from Secret Manager
+        id: keys
+        uses: google-github-actions/get-secretmanager-secrets@v3
+        with:
+          secrets: |-
+            rail:london-commuter-broker/rail-data-api-key
+      - name: Probe reason-code endpoints
+        env:
+          NR_API_KEY: ${{ steps.keys.outputs.rail }}
+        run: |
+          mkdir -p probe-out
+          python3 - <<'EOF'
+          import json, os, urllib.request, urllib.error
+          base = "https://api1.raildata.org.uk/1010-live-departure-board---staff-version1_0/LDBSVWS/api/20220120"
+          key = os.environ["NR_API_KEY"]
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, *a, **k):
+                  return None
+          opener = urllib.request.build_opener(NoRedirect)
+          for name, path in (("list", "GetReasonCodeList"), ("one", "GetReasonCode/681")):
+              req = urllib.request.Request(f"{base}/{path}", headers={"x-apikey": key, "Accept": "application/json",
+                                                                       "User-Agent": "london-walkabout-probe/1.0"})
+              try:
+                  with opener.open(req, timeout=30) as r:
+                      status, body, ctype = r.status, r.read(), r.headers.get("Content-Type", "")
+              except urllib.error.HTTPError as e:
+                  status, ctype = e.code, e.headers.get("Content-Type", "")
+                  try:
+                      body = e.read()
+                  except Exception:
+                      body = b""
+              except Exception as e:
+                  print(f"{path}: {type(e).__name__}")
+                  continue
+              print(f"{path}: HTTP {status}, {len(body)} bytes, {ctype}")
+              if status == 200:
+                  open(f"probe-out/{name}.json", "wb").write(body)
+                  try:
+                      j = json.loads(body.decode("utf-8"))
+                      shape = type(j).__name__
+                      if isinstance(j, dict):
+                          shape += " keys=" + ",".join(list(j)[:8])
+                      elif isinstance(j, list):
+                          shape += f" len={len(j)}"
+                      print("  shape:", shape)
+                  except Exception:
+                      print("  body is not JSON")
+          EOF
+      - name: Keep the responses for inspection
+        if: ${{ hashFiles('probe-out/*') != '' }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: nr-reason-probe
+          path: probe-out/
