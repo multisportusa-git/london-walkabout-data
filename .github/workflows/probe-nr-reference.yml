@@ -1,0 +1,64 @@
+name: probe-nr-reference
+
+# One-off, manual. Calls the Rail Data Marketplace "Reference Data" product (GetReasonCodeList) with its own key.
+# Prints HTTP status, size and the first 600 characters of the response (public reference data, never the key).
+# The key is read keylessly from Secret Manager (masked in logs) and travels only in the x-apikey header.
+# Collects nothing and commits nothing.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Sign in to Google Cloud (keyless)
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SA_EMAIL }}
+      - name: Read the Reference Data key from Secret Manager
+        id: keys
+        uses: google-github-actions/get-secretmanager-secrets@v3
+        with:
+          secrets: |-
+            ref:london-commuter-broker/rail-reference-data-key
+      - name: Probe
+        env:
+          REF_KEY: ${{ steps.keys.outputs.ref }}
+        run: |
+          mkdir -p probe-out
+          python3 - <<'EOF'
+          import os, urllib.request, urllib.error
+          base = "https://api1.raildata.org.uk/1010-reference-data1_0/LDBSVWS/api/ref/20211101"
+          key = os.environ["REF_KEY"]
+          for name, path in (("list", "GetReasonCodeList"), ("one", "GetReasonCode/100")):
+              req = urllib.request.Request(f"{base}/{path}", headers={"x-apikey": key, "Accept": "application/json",
+                                                                       "User-Agent": "london-walkabout-probe/1.0"})
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as r:
+                      status, body, ctype = r.status, r.read(), r.headers.get("Content-Type", "")
+              except urllib.error.HTTPError as e:
+                  status, ctype = e.code, e.headers.get("Content-Type", "")
+                  body = e.read() if e.fp else b""
+              except Exception as e:
+                  print(f"{path}: {type(e).__name__}")
+                  continue
+              print(f"{path}: HTTP {status}, {len(body)} bytes, {ctype}")
+              print("  start:", body[:600].decode("utf-8", "replace"))
+              if status == 200:
+                  open(f"probe-out/{name}.json", "wb").write(body)
+          EOF
+      - name: Keep the responses for inspection
+        if: ${{ hashFiles('probe-out/*') != '' }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: nr-reference-probe
+          path: probe-out/
