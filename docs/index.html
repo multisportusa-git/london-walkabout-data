@@ -300,7 +300,7 @@ section.sx.closed .sb{display:none}section.sx.closed .sh .lede{display:none}
 /* My lines */
 .fav{margin:6px 0 14px;padding:16px}.fhead{display:grid;gap:10px;grid-template-columns:1fr minmax(240px,460px);align-items:start}.fpickw{display:grid;gap:8px}.fpickw .fchips{gap:5px}.fpickw .fchip{padding:4px 10px}.fhead h3{margin:0;font-size:16px;font-weight:800}
 .fpick{position:relative}.fpick input{width:100%;font:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--rule);border-radius:12px;background:var(--bg);color:var(--ink)}.fpick input:disabled{opacity:.6}
-.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:12px;grid-auto-flow:row dense}.fgrid .lp{grid-column:1/-1;margin:0}
+.lwmap.fmap{height:260px;margin-top:6px}.fmapw{margin-top:10px}.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:12px;grid-auto-flow:row dense}.fgrid .lp{grid-column:1/-1;margin:0}
 .fcard{position:relative;display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;gap:4px 12px;align-items:center;padding:12px 34px 12px 12px;border-radius:16px;border:1px solid var(--rule);background:var(--bg);border-left:6px solid var(--lc,var(--c5));cursor:pointer;transition:transform .14s,box-shadow .14s}
 .fcard:hover{transform:translateY(-2px);box-shadow:0 8px 22px #00000026}.fcard.open{box-shadow:0 0 0 2px var(--accent)}
 .fcard.red{--lc:var(--c4)}.fcard.amber{--lc:var(--c1)}.fcard.green{--lc:var(--c0)}.fcard.grey{--lc:var(--c5)}
@@ -1291,11 +1291,44 @@ function impactOf(text,status){var T=String(text||""),out=[],m;
  var alt=(T.match(/[^.]*(?:please use|use local|replacement bus|tickets will be accepted|alternative|instead|bus service [A-Z]?\d+|allow extra time)[^.]*\./ig)||[]).slice(0,3);alt.forEach(function(a){out.push(["What to do",a.trim()])});
  var adv={"Minor Delays":"Trains are running with short delays: allow a few extra minutes.","Severe Delays":"Expect long waits and crowded trains: allow plenty of extra time or use another route.","Reduced Service":"Fewer trains than usual: expect longer waits.","Part Closure":"Part of the line is not running: check whether your stations are in the closed section.","Part Suspended":"Part of the line is suspended: avoid the affected section or use the alternatives below.","Suspended":"The line is not running: use another route.","Planned Closure":"The line is closed as planned: use another route.","Service Closed":"Not running at this hour.","Special Service":"Services are changed: check the notice below before you travel.","Bus Service":"Buses replace trains on part of the route."}[status];
  if(adv)out.unshift(["What it means",adv]);if(!alt.length&&status&&status!=="Good Service")out.push(["What to do","Check TfL Journey Planner or National Rail before you set off."]);return out}
+var LRT=null,COK=null;
+function loadLRT(){if(LRT)return Promise.resolve(LRT);return fetchJSON("rollups/lineRoutes.json?"+Date.now()).then(function(j){LRT=(j&&j.lines)?j:{lines:{},stops:{}};return LRT})}
+function normSt(n){return String(n||"").toLowerCase().replace(/['’]/g,"").replace(/&/g," and ").replace(/\([^)]*\)/g," ").replace(/\b(?:underground |rail |dlr |overground |tram |elizabeth line )?(?:station|stop)\b/g," ").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim()}
+function matchKey(keys,n){if(!n)return null;if(keys.indexOf(n)>=0)return n;var best=null;keys.forEach(function(k){if(k.length>=4&&n.length>=4&&(k.indexOf(n+" ")===0||n.indexOf(k+" ")===0)&&(!best||k.length<best.length))best=k});return best}
+function legPairs(text){var out=[],m=/\bbetween\s+([^.;(]+?)(?=\s*[.;(]|,\s|\s(?:due to|due|while|because|until|from|with|following|owing)\b|$)/i.exec(text);
+ if(m){var parts=m[1].split(/\s+and\s+/i);for(var i=1;i<parts.length;i++)out.push([parts.slice(0,i).join(" and "),parts.slice(i).join(" and ")])}
+ var f=/\bfrom\s+([^.;(,]+?)\s+to\s+([^.;(,]+?)(?=\s*[.;(,]|\s(?:due|while|because|until|with|following)\b|$)/i.exec(text);if(f)out.push([f[1],f[2]]);return out}
+function singleAt(text){var m=/\b(?:at|around|near)\s+([A-Z][^.;(,]+?)(?=\s*[.;(,]|\s(?:due|while|because|until|with|following)\b|$)/.exec(text);return m?m[1]:null}
+function routeGraph(lid){var L0=LRT&&LRT.lines[lid];if(!L0)return null;var adj={},names={};L0.b.forEach(function(b){b.forEach(function(id,i){var s=LRT.stops[id];if(!s)return;names[normSt(s[0])]=id;adj[id]=adj[id]||[];if(i&&LRT.stops[b[i-1]]){adj[id].push(b[i-1]);(adj[b[i-1]]=adj[b[i-1]]||[]).push(id)}})});return{adj:adj,names:names,keys:Object.keys(names)}}
+function pathIds(g,a,b){if(a===b)return[a];var prev={},q=[a],seen={};seen[a]=1;while(q.length){var x=q.shift();if(x===b)break;(g.adj[x]||[]).forEach(function(y){if(!seen[y]){seen[y]=1;prev[y]=x;q.push(y)}})}if(!seen[b])return null;var p=[b];while(p[0]!==a)p.unshift(prev[p[0]]);return p}
+function coIdx(){if(COK)return COK;var m={};Object.keys(COORD||{}).forEach(function(k){var c=COORD[k];m[normSt(stName(c[2]))]=c});COK={m:m,keys:Object.keys(m)};return COK}
+function coFind(name){var ix=coIdx(),k=matchKey(ix.keys,normSt(name));return k?ix.m[k]:null}
+function legMap(it,texts){var box=el("div",{class:"fmapw",style:"display:none"}),mapEl=el("div",{class:"lwmap fmap",role:"region","aria-label":"Map of the "+it.name+" route with the affected stretch highlighted"}),cap=el("p",{class:"small"});
+ box.appendChild(el("div",{class:"dsub"},["Where on the route"]));box.appendChild(mapEl);box.appendChild(cap);
+ Promise.all([loadLeaflet(),loadLRT(),COORD?Promise.resolve():fetchJSON("stationCoords.json").then(function(j){COORD=j||{}})]).then(function(){if(!box.isConnected)return;
+  var g=routeGraph(it.f.id),legs=[],pts=[],seen={};
+  texts.forEach(function(t){legPairs(t).forEach(function(p){var key=normSt(p[0])+"|"+normSt(p[1]);if(seen[key])return;
+    var a=g&&matchKey(g.keys,normSt(p[0])),b=g&&matchKey(g.keys,normSt(p[1]));
+    if(a&&b){var path=pathIds(g,g.names[a],g.names[b]);if(path&&path.length>1){seen[key]=1;legs.push({ll:path.map(function(id){return[LRT.stops[id][1],LRT.stops[id][2]]}),a:LRT.stops[g.names[a]][0],b:LRT.stops[g.names[b]][0],exact:true});return}}
+    var ca=coFind(p[0]),cb=coFind(p[1]);if(ca&&cb){seen[key]=1;legs.push({ll:[[ca[0],ca[1]],[cb[0],cb[1]]],a:stName(ca[2]),b:stName(cb[2]),exact:false})}});
+   var at=singleAt(t);if(at&&!seen["@"+normSt(at)]){var ga=g&&matchKey(g.keys,normSt(at));if(ga){var sid=g.names[ga];seen["@"+normSt(at)]=1;pts.push({ll:[LRT.stops[sid][1],LRT.stops[sid][2]],n:LRT.stops[sid][0]})}}});
+  if(!legs.length&&!pts.length)return;
+  box.style.display="";var dark=(document.documentElement.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"))==="dark";
+  var M=L.map(mapEl,{scrollWheelZoom:false,attributionControl:true});L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(M);mapEl.classList.toggle("dark-tiles",dark);
+  var css=getComputedStyle(document.documentElement),red=it.light==="red",alert=css.getPropertyValue(red?"--c4":"--c1").trim()||(red?"#d1443f":"#e3b341"),lc=LCOL[it.f.id]||css.getPropertyValue("--accent").trim()||"#1560c4",all=[];
+  if(g)LRT.lines[it.f.id].b.forEach(function(b){var ids=b.filter(function(id){return LRT.stops[id]}),ll=ids.map(function(id){return[LRT.stops[id][1],LRT.stops[id][2]]});L.polyline(ll,{color:lc,weight:4,opacity:.6}).addTo(M);ids.forEach(function(id){L.circleMarker([LRT.stops[id][1],LRT.stops[id][2]],{radius:3,color:lc,weight:1,fillColor:"#fff",fillOpacity:1}).bindTooltip(LRT.stops[id][0]).addTo(M)})});
+  legs.forEach(function(l){L.polyline(l.ll,{color:alert,weight:9,opacity:.95,lineCap:"round",dashArray:l.exact?null:"6 10"}).addTo(M);l.ll.forEach(function(c){all.push(c)});
+   [[l.ll[0],l.a],[l.ll[l.ll.length-1],l.b]].forEach(function(e){L.circleMarker(e[0],{radius:7,color:"#fff",weight:2,fillColor:alert,fillOpacity:1}).bindTooltip(e[1],{permanent:true,direction:"top"}).addTo(M)})});
+  pts.forEach(function(q){all.push(q.ll);L.circleMarker(q.ll,{radius:9,color:"#fff",weight:2,fillColor:alert,fillOpacity:1}).bindTooltip(q.n,{permanent:true,direction:"top"}).addTo(M)});
+  M.fitBounds(L.latLngBounds(all),{padding:[34,34],maxZoom:14});setTimeout(function(){M.invalidateSize()},60);
+  cap.textContent="Highlighted in "+(red?"red":"amber")+": "+legs.map(function(l){return l.a+" to "+l.b}).concat(pts.map(function(q){return"at "+q.n})).join("; ")+(legs.some(function(l){return!l.exact})?" (straight line between the two stations: approximate).":".")}).catch(function(){});
+ return box}
 function favPanel(it,close){var kids=[],L=LIGHT[it.light];
  kids.push(el("div",{class:"flight-big "+it.light},[el("i"),el("div",null,[el("b",null,[L[0]]),el("span",null,[it.xt?it.xt:it.nrs?nrsText(it.nrs):it.tile?(it.tile.status||"No status"):it.light==="green"?"No diversion or delay listed by TfL":it.light==="grey"?"No reading yet":"Disruption listed by TfL"])])]));
- if(it.tile){var D=it.tile.details||[];if(!D.length)kids.push(el("p",{class:"ok-line"},[it.light==="grey"?"Not running at this hour (normal overnight closure).":"✓ Good service: no disruption reported at the latest reading."]));
+ if(it.tile){var D=it.tile.details||[],texts=[];if(!D.length)kids.push(el("p",{class:"ok-line"},[it.light==="grey"?"Not running at this hour (normal overnight closure).":"✓ Good service: no disruption reported at the latest reading."]));
   D.forEach(function(d){var txt=d.text||(d.incident?[d.incident.summary,d.incident.routes].concat((d.incident.body||[]).map(function(b){return b[Object.keys(b)[0]]})).join(". "):"");
-   var imp=impactOf(txt,(d.statuses||[])[0]);kids.push(el("div",{class:"fimp"},[el("div",{class:"dsub"},[(d.statuses||[]).join(" · ")+(d.until?" · until "+fmtWhen(d.until):"")]),el("dl",null,imp.reduce(function(a,x){return a.concat([el("dt",null,[x[0]]),el("dd",null,[x[1]])])},[]))]))});
+   texts.push(txt);var imp=impactOf(txt,(d.statuses||[])[0]);kids.push(el("div",{class:"fimp"},[el("div",{class:"dsub"},[(d.statuses||[]).join(" · ")+(d.until?" · until "+fmtWhen(d.until):"")]),el("dl",null,imp.reduce(function(a,x){return a.concat([el("dt",null,[x[0]]),el("dd",null,[x[1]])])},[]))]))});
+  if(texts.length)kids.push(legMap(it,texts));
   if(D.length){var full=el("button",{type:"button",class:"fchip"},["Full notice and last 24 hours ↓"]);full.addEventListener("click",function(){var p=linePanel(it.tile,function(){p.remove()});full.replaceWith(p)});kids.push(full)}
   var A=RS&&(RG.k==="now"?RS.ctx:RS.cur),Lr=A&&A.lines[it.f.id];if(Lr&&Lr.open){var f=gf(Lr);kids.push(el("p",{class:"small"},["Over "+(RG.k==="now"?"the last 24 h":RS.w.label)+": "+pc(f,0)+" good service, "+nf(Lr.inc)+" incident"+(Lr.inc===1?"":"s")+(Lr.inc?" (typically "+hrs1((Lr.open-Lr.cats[0]-Lr.note)/Lr.inc)+" to recover)":"")+"."]))}}
  else if(it.bus){var x=it.bus.r,h=it.bus.h;if(!x||!x.k[h])kids.push(el("p",{class:"ok-line"},["✓ No diversion, special service or delay listed for route "+String(it.f.id).toUpperCase()+" at the latest reading."]));

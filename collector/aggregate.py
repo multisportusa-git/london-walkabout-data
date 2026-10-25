@@ -818,6 +818,7 @@ def main():
     publish_rollups(a.data, a.out)
     publish_nr_reasons(a.data, a.out)
     publish_bus_routes(a.data, a.out)
+    publish_line_routes(a.data, a.out)
     publish_upcoming(a.data, a.out)
 
 
@@ -996,6 +997,24 @@ def publish_bus_routes(data_dir, out_dir):
         pass
     os.makedirs(os.path.join(out_dir, "rollups"), exist_ok=True)
     with open(os.path.join(out_dir, "rollups", "busRoutes.json"), "w", encoding="utf-8") as fh:
+        json.dump(ref, fh, separators=(",", ":"), ensure_ascii=False)
+
+
+def publish_line_routes(data_dir, out_dir):
+    """Every TfL rail line's route (ordered stops per branch, with coordinates) for the favourites route map, as
+    rollups/lineRoutes.json, copied from config/lineRoutes.json (next to the data folder; kept by
+    tools/fetch_line_routes.py). Always written ({"lines": {}, "stops": {}} until that file exists or if it is
+    unreadable) so the page's request never 404s."""
+    ref = {"lines": {}, "stops": {}}
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(data_dir)), "config", "lineRoutes.json"), encoding="utf-8") as fh:
+            j = json.load(fh)
+        if isinstance(j, dict) and isinstance(j.get("lines"), dict) and isinstance(j.get("stops"), dict):
+            ref = j
+    except (OSError, ValueError):
+        pass
+    os.makedirs(os.path.join(out_dir, "rollups"), exist_ok=True)
+    with open(os.path.join(out_dir, "rollups", "lineRoutes.json"), "w", encoding="utf-8") as fh:
         json.dump(ref, fh, separators=(",", ":"), ensure_ascii=False)
 
 

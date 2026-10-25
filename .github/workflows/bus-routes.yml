@@ -1,6 +1,7 @@
 name: bus-routes
 
-# Weekly refresh of the full London bus route list (config/busRoutes.json) for the dashboard's favourites picker.
+# Weekly refresh of the full London bus route list (config/busRoutes.json) and the TfL rail line routes
+# (config/lineRoutes.json) for the dashboard's favourites picker and route map.
 # Append-only: commits only when a new route appears, never removes one. The TfL app key is read keylessly from
 # Secret Manager (masked in logs). Zero LLM tokens. The hourly collect run (or site.yml) republishes the page.
 on:
@@ -42,15 +43,19 @@ jobs:
         env:
           TFL_APP_KEY: ${{ steps.keys.outputs.tfl }}
         run: python3 tools/fetch_bus_routes.py --out config/busRoutes.json
+      - name: Fetch the line routes
+        env:
+          TFL_APP_KEY: ${{ steps.keys.outputs.tfl }}
+        run: python3 tools/fetch_line_routes.py --out config/lineRoutes.json
       - name: Commit if changed
         run: |
-          if git diff --quiet -- config/busRoutes.json && [ -z "$(git ls-files --others --exclude-standard config/busRoutes.json)" ]; then
+          if git diff --quiet -- config/busRoutes.json config/lineRoutes.json && [ -z "$(git ls-files --others --exclude-standard config/busRoutes.json config/lineRoutes.json)" ]; then
             echo "no change"; exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add config/busRoutes.json
-          git commit -m "config: refresh the London bus route list"
+          git add config/busRoutes.json config/lineRoutes.json
+          git commit -m "config: refresh the London bus route list and TfL line routes"
           for i in 1 2 3 4 5; do
             git pull --rebase -q && git push -q origin HEAD:${{ github.ref_name }} && exit 0
             git rebase --abort 2>/dev/null || true
