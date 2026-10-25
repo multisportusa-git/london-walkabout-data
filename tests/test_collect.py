@@ -274,6 +274,77 @@ class NationalRailIncidentsTests(unittest.TestCase):
             self.assertFalse((Path(tmp) / "nationalRailIncidents").exists())
 
 
+class LineStatusNationalRailMessageTests(unittest.TestCase):
+    KB = (b'<?xml version="1.0"?><Incidents xmlns="http://nationalrail.co.uk/xml/incident">'
+          b'<PtIncident><IncidentNumber>A1</IncidentNumber><Version>7</Version><Summary>Buses replace trains between Brighton and Haywards Heath</Summary>'
+          b'<Description>&lt;p&gt;Engineering work is &lt;a href="x"&gt;closing&lt;/a&gt; all lines.&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Allow extra time&lt;/li&gt;&lt;/ul&gt;</Description>'
+          b'<InfoLinks><InfoLink><Uri>https://www.nationalrail.co.uk/service-disruptions/wivelsfield-20261025/</Uri></InfoLink></InfoLinks>'
+          b'<Affects><RoutesAffected>&lt;p&gt;Between Brighton and Haywards Heath&lt;/p&gt;</RoutesAffected></Affects></PtIncident>'
+          b'</Incidents>')
+
+    def fetch(self, url, timeout):
+        if "/Line/Mode/" in url:
+            return 200, json.dumps([
+                {"id": "southern", "name": "Southern", "modeName": "national-rail", "lineStatuses": [
+                    {"statusSeverity": 0, "statusSeverityDescription": "Special Service",
+                     "reason": "https://www.nationalrail.co.uk/service-disruptions/wivelsfield-20261025/"}]},
+                {"id": "c2c", "name": "c2c", "modeName": "national-rail", "lineStatuses": [
+                    {"statusSeverity": 0, "statusSeverityDescription": "Special Service", "reason": "https://www.nationalrail.co.uk/unknown/"}]},
+                {"id": "circle", "name": "Circle", "modeName": "tube", "lineStatuses": [
+                    {"statusSeverity": 5, "statusSeverityDescription": "Part Closure", "reason": "CIRCLE LINE: no service"}]}]).encode(), {}
+        return 404, b"", {}
+
+    def run_with(self, tmp, datasets, kb_key="KBKEY-SECRET-9"):
+        import argparse, gzip as gz
+        calls = []
+        def nr_fetch(url, k, timeout, accept="application/json"):
+            calls.append(url)
+            return 200, gz.compress(self.KB)
+        if kb_key:
+            os.environ["NR_KB_INCIDENTS_KEY"] = kb_key
+        try:
+            a = argparse.Namespace(out=tmp, registry=str(ROOT / "config" / "registry.json"), now="2026-10-25T08:00:05Z", no_sleep=True,
+                                   datasets=datasets, dry_run=False, current_only=True)
+            rc = collect.run(a, fetch=self.fetch, sleep=lambda s: None, clock=lambda: dt("2026-10-25T08:00:05Z"), nr_fetch=nr_fetch)
+        finally:
+            os.environ.pop("NR_KB_INCIDENTS_KEY", None)
+        return rc, calls
+
+    def test_national_rail_message_stored_with_line_status(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            rc, calls = self.run_with(tmp, "lineStatus,nationalRailIncidents")
+            self.assertEqual(rc, 0)
+            self.assertEqual(len(calls), 1)    # one KB request serves both datasets
+            rec = RunTests.lines(None, tmp, "lineStatus", "2026-10-25")[0]
+            L = {l["id"]: l for l in rec["lines"]}
+            st = L["southern"]["statuses"][0]
+            self.assertEqual(st["reason"], "https://www.nationalrail.co.uk/service-disruptions/wivelsfield-20261025/")  # TfL's text kept as-is
+            m = st["nrIncident"]
+            self.assertEqual((m["id"], m["version"]), ("A1", "7"))
+            self.assertEqual(m["summary"], "Buses replace trains between Brighton and Haywards Heath")
+            self.assertEqual(m["routes"], "Between Brighton and Haywards Heath")
+            self.assertEqual(m["message"], "Engineering work is closing all lines.\n\u2022 Allow extra time")
+            self.assertNotIn("nrIncident", L["c2c"]["statuses"][0])     # no match: nothing invented
+            self.assertNotIn("nrIncident", L["circle"]["statuses"][0])  # TfL lines already carry the full message
+            self.assertEqual(L["circle"]["statuses"][0]["reason"], "CIRCLE LINE: no service")
+            self.assertEqual(len(RunTests.lines(None, tmp, "nationalRailIncidents", "2026-10-25")), 1)
+            self.assertNotIn("KBKEY", json.dumps(rec))
+
+    def test_line_status_alone_still_resolves_message(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            rc, calls = self.run_with(tmp, "lineStatus")
+            rec = RunTests.lines(None, tmp, "lineStatus", "2026-10-25")[0]
+            self.assertEqual(rec["lines"][0]["statuses"][0]["nrIncident"]["id"], "A1")
+            self.assertEqual(len(calls), 1)
+
+    def test_no_kb_key_line_status_unchanged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            rc, calls = self.run_with(tmp, "lineStatus", kb_key=None)
+            self.assertEqual((rc, calls), (0, []))
+            rec = RunTests.lines(None, tmp, "lineStatus", "2026-10-25")[0]
+            self.assertNotIn("nrIncident", rec["lines"][0]["statuses"][0])
+
+
 class NationalRailStationsTests(unittest.TestCase):
     def feed(self, ctn_lifts="ok"):
         return json.dumps({"stations": [

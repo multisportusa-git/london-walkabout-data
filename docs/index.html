@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>London Walkabout Data Desk</title>
 <meta name="description" content="Hourly TfL line status, lift, station disruption, crowding and arrivals record.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f6f4ee;--card:#fff;--ink:#16191f;--sub:#5b6472;--rule:#e2ddcf;--accent:#1560c4;--accent2:#c24c08;
 --c0:#2e8b6a;--c1:#e3b341;--c2:#e08a3c;--c3:#7e6bc4;--c4:#d1443f;--c5:#8c8f98;--cm:#e9e5d9;--bar:#1560c4;--warn:#c24c08;--ok:#2e8b6a}
@@ -109,6 +111,55 @@ a.ob{display:block;color:inherit;text-decoration:none}a.ob:hover{box-shadow:0 6p
 @media (min-width:720px){.obs{grid-template-columns:repeat(3,1fr)}}
 @media (min-width:720px){.kpis{grid-template-columns:repeat(4,1fr)}.cols{grid-template-columns:1fr 1fr}h1{font-size:32px}.wrap{padding:28px 24px 72px}.hmlabels div{height:14px}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+/* Now board: tap a tile for the story behind its status */
+#now{font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#now h2{font-size:22px;font-weight:800;letter-spacing:-.02em}
+#now .board{grid-auto-flow:row dense;gap:10px}
+button.tile{font:inherit;text-align:left;border:0;cursor:pointer;position:relative;transition:transform .14s ease,box-shadow .14s ease,filter .14s;padding-right:30px}
+button.tile:hover{transform:translateY(-2px);box-shadow:0 8px 20px #00000033}
+button.tile:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button.tile .tn{font-weight:800;font-size:15px;letter-spacing:-.01em}button.tile .ts{font-weight:600}
+button.tile .cv{position:absolute;right:9px;bottom:9px;width:18px;height:18px;opacity:.85;transition:transform .2s}
+button.tile[aria-expanded="true"]{box-shadow:0 0 0 3px var(--bg),0 0 0 5px currentColor}
+button.tile[aria-expanded="true"] .cv{transform:rotate(180deg)}
+.lp{grid-column:1/-1;border-radius:20px;overflow:hidden;background:var(--card);border:1px solid var(--rule);box-shadow:0 14px 40px #0000002e;animation:lpIn .22s ease-out;margin:4px 0 8px}
+@keyframes lpIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.lp{animation:none}button.tile,button.tile .cv{transition:none}}
+.lp-hd{position:relative;padding:20px 22px 18px;color:#fff;background:linear-gradient(135deg,var(--lc) 0%,color-mix(in srgb,var(--lc) 62%,#000) 100%);overflow:hidden}
+.lp-hd::after{content:"";position:absolute;right:-60px;top:-70px;width:220px;height:220px;border-radius:50%;background:#ffffff1f}
+.lp-hd::before{content:"";position:absolute;right:70px;bottom:-90px;width:160px;height:160px;border-radius:50%;background:#ffffff14}
+.lp-hd.dk{color:#1b1b1b}.lp-hd.dk .lp-x{color:#1b1b1b;background:#00000014}.lp-hd.dk .pill{background:#0000001a}
+.lp-eb{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+.lp-tt{font-size:28px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin:4px 0 10px;position:relative;z-index:1}
+.lp-pills{display:flex;flex-wrap:wrap;gap:6px;position:relative;z-index:1}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 11px;border-radius:99px;background:#ffffff2e;backdrop-filter:blur(4px)}
+.lp-x{position:absolute;right:14px;top:14px;z-index:2;width:34px;height:34px;border-radius:50%;border:0;background:#ffffff2b;color:#fff;font-size:20px;line-height:34px;cursor:pointer}
+.lp-x:hover{background:#ffffff47}.lp-x:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.lp-bd{padding:18px 22px 20px;display:grid;gap:14px}
+.st{display:grid;grid-template-columns:44px 1fr;gap:14px;padding:16px;border-radius:16px;background:color-mix(in srgb,var(--sc) 7%,var(--card));border:1px solid color-mix(in srgb,var(--sc) 28%,var(--rule))}
+.st-ic{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--sc);color:#fff}
+.st-ic svg{width:22px;height:22px}
+.st-k{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--sc)}
+.st-k .tg{letter-spacing:0;text-transform:none;font-size:12px;font-weight:700;color:var(--ink);background:color-mix(in srgb,var(--sc) 16%,transparent);padding:2px 9px;border-radius:99px}
+.st-h{font-size:18px;font-weight:800;letter-spacing:-.015em;line-height:1.3;margin:6px 0 0}
+.st-q{font-size:16px;font-weight:500;line-height:1.6;margin:8px 0 0;padding-left:12px;border-left:3px solid var(--sc)}
+.st-rt{display:inline-flex;align-items:flex-start;gap:8px;margin-top:10px;padding:8px 12px;border-radius:12px;background:var(--bg);font-size:14px;font-weight:600}
+.st-rt span{white-space:pre-line}.st-rt svg{width:16px;height:16px;flex:none;margin-top:2px;color:var(--sc)}
+.st-bd{margin-top:10px;font-size:15px;line-height:1.6;color:var(--ink)}
+.st-bd p{margin:0 0 8px}.st-bd h5{font-size:14px;font-weight:800;margin:12px 0 4px;letter-spacing:-.01em}
+.st-bd ul{margin:0 0 8px;padding:0;list-style:none}.st-bd li{position:relative;padding-left:18px;margin:3px 0}
+.st-bd li::before{content:"";position:absolute;left:3px;top:.62em;width:7px;height:7px;border-radius:50%;background:var(--sc)}
+.st-bd.fold{max-height:190px;overflow:hidden;-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
+.st-more{margin-top:6px;font:inherit;font-size:13px;font-weight:700;color:var(--accent);background:none;border:0;padding:4px 0;cursor:pointer}
+.st-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.mc{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--sub);background:var(--bg);border:1px solid var(--rule);border-radius:99px;padding:3px 10px}
+.mc svg{width:13px;height:13px}a.mc{color:var(--accent);text-decoration:none}a.mc:hover{border-color:var(--accent)}
+.ok-st{display:flex;align-items:center;gap:14px;padding:16px;border-radius:16px;background:color-mix(in srgb,var(--c0) 10%,var(--card));border:1px solid color-mix(in srgb,var(--c0) 30%,var(--rule))}
+.ok-st .st-ic{background:var(--c0)}.ok-st b{display:block;font-size:18px;font-weight:800;letter-spacing:-.015em}.ok-st span{font-size:14px;color:var(--sub)}
+.h24 h4{margin:0 0 8px;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--sub)}
+.h24 .strip{display:grid;grid-template-columns:repeat(24,1fr);gap:3px}.h24 .strip i{height:22px;border-radius:5px;background:var(--cm)}
+.h24 .ax{display:flex;justify-content:space-between;font-size:11px;color:var(--sub);margin-top:5px;font-weight:600}
+@media (max-width:560px){.lp-tt{font-size:23px}.st{grid-template-columns:1fr}.st-ic{width:38px;height:38px}.lp-bd{padding:14px}.lp-hd{padding:18px 16px}}
 </style>
 </head>
 <body>
@@ -244,11 +295,73 @@ function arrivals(S){
  var b=card("Longest average wait for the next train",[tbl("Avg wait",list(A.slowest.slice(0,8),"meanNextSec",function(s){return Math.round(s.meanNextSec/60*10)/10+" min"}))]);
  return sec("arrivals","Arrivals","How many trains are predicted and how long until the next one, "+(A.window||"")+". Chips show the average wait per line.",[el("div",{class:"grid cols"},[a,b])])}
 
+var NOW_OPEN=null;
+var MODE_LBL={tube:"London Underground",dlr:"Docklands Light Railway",overground:"London Overground","elizabeth-line":"Elizabeth line",tram:"London Trams","river-bus":"River services","cable-car":"Cable car","national-rail":"National Rail"};
+var KIND_LBL={planned:"Planned works",live:"Live incident",info:"Service information"};
+var ICO={
+ planned:"M7 2v3M17 2v3M3.5 9h17M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v13a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5zM8 13h3v3H8z",
+ live:"M13 2 4 14h7l-1 8 9-12h-7z",
+ info:"M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 11v6M12 7.5v.5",
+ clock:"M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2",
+ pin:"M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21zM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
+ check:"M4.5 12.5 9.5 17.5 19.5 6.5",
+ src:"M5 4h10l4 4v12H5zM14 4v5h5M8 13h8M8 17h6",
+ ext:"M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
+ chev:"M6 9l6 6 6-6"};
+function ico(n){return sv("svg",{viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"2.2","stroke-linecap":"round","stroke-linejoin":"round","aria-hidden":"true"},[sv("path",{d:ICO[n]})])}
+function fmtWhen(s){if(!s)return"";var d=new Date(s);if(isNaN(d))return"";return d.toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"}).replace(/,(?= \d\d:)/," ·")}
+function storyCard(t,d){
+ var sc="var(--c"+(d.cat==null?2:d.cat)+")",inc=d.incident,kids=[];
+ kids.push(el("div",{class:"st-k"},[KIND_LBL[d.kind]||"Update"].concat((d.statuses||[]).map(function(x){return el("span",{class:"tg"},[x])}))));
+ if(inc){
+  if(inc.summary)kids.push(el("p",{class:"st-h"},[inc.summary]));
+  if(inc.routes)kids.push(el("div",{class:"st-rt"},[ico("pin"),el("span",null,[inc.routes])]));
+  var B=inc.body||[];
+  if(B.length){var bd=el("div",{class:"st-bd"}),ul=null;
+   B.forEach(function(b){var k=Object.keys(b)[0],v=b[k];
+    if(k==="li"){if(!ul){ul=el("ul");bd.appendChild(ul)}ul.appendChild(el("li",null,[v]));return}
+    ul=null;bd.appendChild(el(k==="h"?"h5":"p",null,[v]))});
+   kids.push(bd);
+   var len=B.reduce(function(a,b){return a+String(b[Object.keys(b)[0]]).length},0);
+   if(len>420){bd.classList.add("fold");var mb=el("button",{class:"st-more",type:"button","aria-expanded":"false"},["Read the full notice ↓"]);
+    mb.addEventListener("click",function(){var f=bd.classList.toggle("fold");mb.setAttribute("aria-expanded",String(!f));mb.textContent=f?"Read the full notice ↓":"Show less ↑"});kids.push(mb)}}
+ }else if(d.text){kids.push(el("p",{class:"st-q"},[d.text]))}
+ else{kids.push(el("p",{class:"st-q"},["National Rail has not published the notice text for this status yet."]))}
+ var meta=[];
+ if(d.from)meta.push(el("span",{class:"mc"},[ico("clock"),"From "+fmtWhen(d.from)]));
+ if(d.until)meta.push(el("span",{class:"mc"},[ico("clock"),"Until "+fmtWhen(d.until)]));
+ meta.push(el("span",{class:"mc"},[ico("src"),d.source==="National Rail"?("National Rail notice"+(inc&&inc.updated?" · updated "+fmtWhen(inc.updated):"")):"TfL status message"]));
+ if(d.link&&/^https:\/\//.test(d.link))meta.push(el("a",{class:"mc",href:d.link,target:"_blank",rel:"noopener"},[ico("ext"),"nationalrail.co.uk"]));
+ kids.push(el("div",{class:"st-meta"},meta));
+ return el("div",{class:"st",style:"--sc:"+sc},[el("div",{class:"st-ic"},[ico(d.kind==="planned"?"planned":d.kind==="live"?"live":"info")]),el("div",null,kids)])}
+function hist24(t){var H=t.hist;if(!H||!H.length)return null;
+ return el("div",{class:"h24"},[el("h4",null,["Last 24 hours"]),el("div",{class:"strip"},H.map(function(c,i){var ago=H.length-1-i;return el("i",{style:c==null?"":"background:var(--c"+c+")",title:(ago?ago+" h ago":"latest reading")+": "+(c==null?"no reading":CATS[c])})})),el("div",{class:"ax"},[el("span",null,["24 h ago"]),el("span",null,["now"])])])}
+function linePanel(t,close){
+ var k=t.cat==null?2:t.cat,D=t.details||[];
+ var x=el("button",{class:"lp-x",type:"button","aria-label":"Close details"},["×"]);x.addEventListener("click",close);
+ var pills=(D.length?D.reduce(function(a,d){return a.concat(d.statuses||[])},[]):[t.status||"No status"]).filter(function(v,i,a){return a.indexOf(v)===i}).map(function(v){return el("span",{class:"pill"},[v])});
+ var hd=el("div",{class:"lp-hd"+(k===1||k===2?" dk":""),style:"--lc:var(--c"+k+")"},[x,el("div",{class:"lp-eb"},[MODE_LBL[t.mode]||t.mode||"Line"]),el("div",{class:"lp-tt"},[t.name||t.id]),el("div",{class:"lp-pills"},pills)]);
+ var body=[];
+ if(D.length)D.forEach(function(d){body.push(storyCard(t,d))});
+ else body.push(el("div",{class:"ok-st"},[el("div",{class:"st-ic"},[ico("check")]),el("div",null,[el("b",null,[t.status||"Good service"]),el("span",null,["TfL reports no disruption on this line at the latest reading."])])]));
+ var h=hist24(t);if(h)body.push(h);
+ return el("div",{class:"lp",id:"lp-"+t.id,role:"region","aria-label":(t.name||t.id)+" details"},[hd,el("div",{class:"lp-bd"},body)])}
 function nowBoard(S){
  var N=S.now;if(!N||!N.lines)return sec("now","Now","No line status yet.",[]);
- var tiles=N.lines.map(function(t){var k=t.cat==null?"n":t.cat;return el("div",{class:"tile k"+k,title:t.reason||t.status||""},[el("div",{class:"tn"},[t.name||t.id]),el("div",{class:"ts"},[t.status||"No status"])])});
+ var board=el("div",{class:"board"}),btns={};
+ function closeAll(focus){var p=board.querySelector(".lp");if(p)p.remove();Object.keys(btns).forEach(function(id){btns[id].setAttribute("aria-expanded","false")});var was=NOW_OPEN;NOW_OPEN=null;if(focus&&was&&btns[was])btns[was].focus()}
+ function open(t,scroll){closeAll();NOW_OPEN=t.id;var b=btns[t.id];b.setAttribute("aria-expanded","true");
+  var p=linePanel(t,function(){closeAll(true)});b.insertAdjacentElement("afterend",p);
+  if(scroll&&p.scrollIntoView)p.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"nearest"})}
+ N.lines.forEach(function(t){var k=t.cat==null?"n":t.cat;
+  var b=el("button",{class:"tile k"+k,type:"button","aria-expanded":"false","aria-controls":"lp-"+t.id,title:"Show why: "+(t.status||"")},[el("div",{class:"tn"},[t.name||t.id]),el("div",{class:"ts"},[t.status||"No status"]),ico("chev")]);
+  b.lastChild.setAttribute("class","cv");
+  b.addEventListener("click",function(){if(NOW_OPEN===t.id)closeAll();else open(t,true)});
+  btns[t.id]=b;board.appendChild(b)});
+ board.addEventListener("keydown",function(e){if(e.key==="Escape"&&NOW_OPEN)closeAll(true)});
+ var keep=N.lines.filter(function(t){return t.id===NOW_OPEN})[0];if(keep)open(keep,false);else NOW_OPEN=null;
  var lg=el("div",{class:"legend"},CATS.map(function(n,i){return el("span",null,[el("b",{style:"background:var(--c"+i+")"}),n])}));
- return sec("now","Now","Line status at the latest reading ("+fmtSlot(N.polledAt||N.slot)+"). Hover or long-press a tile for TfL's reason.",[el("div",{class:"board"},tiles),lg])}
+ return sec("now","Now","Line status at the latest reading ("+fmtSlot(N.polledAt||N.slot)+"). Tap any tile for the story behind its status: TfL's own message, or the National Rail notice it points to.",[board,lg])}
 
 function observations(S){
  var O=S.observations||[];if(!O.length)return sec("observations","Observations","Nothing to report yet.",[]);

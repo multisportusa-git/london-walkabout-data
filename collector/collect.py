@@ -35,6 +35,9 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from nrtext import html_text, norm_url  # noqa: E402
+
 try:
     from zoneinfo import ZoneInfo
     LONDON = ZoneInfo("Europe/London")
@@ -263,7 +266,9 @@ def parse_incidents(xml_bytes):
         ops = sorted({(x.text or "").strip() for x in el.iter() if local(x.tag) == "OperatorRef" and (x.text or "").strip()})
         meta = {"planned": (first(el, "Planned") or "").lower() == "true", "start": first(el, "StartTime"),
                 "end": first(el, "EndTime"), "priority": first(el, "IncidentPriority"), "operators": ops,
-                "summary": first(el, "Summary"), "cleared": (first(el, "ClearedIncident") or "").lower() == "true"}
+                "summary": first(el, "Summary"), "cleared": (first(el, "ClearedIncident") or "").lower() == "true",
+                "links": [norm_url(x.text) for x in el.iter() if local(x.tag) == "Uri" and (x.text or "").strip()],
+                "routes": first(el, "RoutesAffected"), "description": first(el, "Description")}
         out[iid] = (first(el, "Version") or "", ET.tostring(el, encoding="unicode"), meta)
     return out
 
@@ -292,10 +297,12 @@ def known_incident_versions(out):
     return seen
 
 
-def collect_nr_incidents(c, ctx):
+def kb_incidents_feed(ctx):
+    """(status, xml bytes) of the KB incidents feed, fetched once per collection pass and shared by
+    lineStatus (to resolve National Rail messages) and nationalRailIncidents."""
+    if "_kb" in ctx:
+        return ctx["_kb"]
     key = ctx.get("kbIncidentsKey")
-    if not key:
-        return None, "skipped", 0, "no NR_KB_INCIDENTS_KEY"
     fetch = ctx.get("nr_fetch") or nr_default_fetch
     status, body = None, b""
     for attempt in range(2):
@@ -306,10 +313,22 @@ def collect_nr_incidents(c, ctx):
         if status == 200 or status in (401, 403):
             break
         time.sleep(0 if ctx.get("no_sleep") else 2.0)
+    if status == 200 and body and body[:2] == b"\x1f\x8b":   # the gateway gzips this feed regardless of Accept-Encoding
+        try:
+            body = gzip.decompress(body)
+        except Exception:
+            status = None
+    ctx["_kb"] = (status, body)
+    return ctx["_kb"]
+
+
+def collect_nr_incidents(c, ctx):
+    key = ctx.get("kbIncidentsKey")
+    if not key:
+        return None, "skipped", 0, "no NR_KB_INCIDENTS_KEY"
+    status, body = kb_incidents_feed(ctx)
     if status != 200 or not body:
         return None, "failed", 0, f"HTTP {status}"
-    if body[:2] == b"\x1f\x8b":   # the gateway serves this feed gzip-compressed regardless of Accept-Encoding
-        body = gzip.decompress(body)
     import hashlib
     try:
         incidents = parse_incidents(body)
@@ -584,9 +603,43 @@ def collect_lines(c, ctx):
                 })
     if not lines:
         return None, "failed", 0, f"0/{len(modes)} mode calls"
+    resolved = add_nr_messages(lines, ctx)
     body = {"source": API + "/Line/Mode/{" + ",".join(modes) + "}/Status",
             "linesRequested": [l["id"] for l in lines], "lines": lines}
-    return body, ("ok" if ok == len(modes) else "partial"), len(lines), f"{ok}/{len(modes)} mode calls"
+    return body, ("ok" if ok == len(modes) else "partial"), len(lines), f"{ok}/{len(modes)} mode calls" + (
+        f", {resolved} National Rail messages" if resolved else "")
+
+
+def add_nr_messages(lines, ctx):
+    """TfL gives National Rail statuses only a nationalrail.co.uk link as the reason. Resolve each link to
+    the Knowledgebase incident it names and store that incident's own words with the status, so the
+    record says why the service is what it is. TfL's reason is kept unchanged; unmatched links get nothing."""
+    want = [st for l in lines for st in l["statuses"]
+            if re.match(r"https?://", (st.get("reason") or "").strip())]
+    if not want or not ctx.get("kbIncidentsKey"):
+        return 0
+    status, body = kb_incidents_feed(ctx)
+    if status != 200 or not body:
+        return 0
+    try:
+        incidents = parse_incidents(body)
+    except Exception:
+        return 0
+    by_url = {}
+    for iid, (v, _, m) in incidents.items():
+        for u in m.get("links") or []:
+            by_url.setdefault(u, (iid, v, m))
+    n = 0
+    for st in want:
+        hit = by_url.get(norm_url(st["reason"]))
+        if not hit:
+            continue
+        iid, v, m = hit
+        st["nrIncident"] = {"id": iid, "version": v, "summary": m.get("summary"),
+                            "routes": html_text(m.get("routes"), 600), "message": html_text(m.get("description")),
+                            "start": m.get("start"), "end": m.get("end"), "planned": m.get("planned")}
+        n += 1
+    return n
 
 
 def collect_stop(c, ctx):
@@ -885,6 +938,7 @@ def collect_slot(args, client, base_ctx, slot, todo, auth_mode, sleep, clock, st
     def attempt(names):
         failed = []
         ctx.pop("_arrivals", None)  # each pass polls arrivals once, shared by both arrivals datasets
+        ctx.pop("_kb", None)        # and fetches the KB incidents feed at most once, shared by lineStatus
         client.consecutive_failures = 0
         for name in names:
             t0 = time.time()

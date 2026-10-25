@@ -4,7 +4,9 @@
 Usage: python3 collector/aggregate.py --data data --out docs
 Tolerates corrupt/empty lines, schema drift (early `readings`/`lineStatuses` variants), dedupes by slot (keeps last).
 """
-import argparse, glob, json, os, re, datetime, collections, statistics
+import argparse, glob, gzip, json, os, re, sys, datetime, collections, statistics
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from nrtext import html_blocks, norm_url  # noqa: E402
 try:
     from zoneinfo import ZoneInfo
     LON = ZoneInfo("Europe/London")
@@ -115,16 +117,157 @@ def latest_record(data_dir, ds):
     except Exception:
         return None
 
+# ---- Now board drill-down: the words behind each status ----
+def tidy_reason(text, name):
+    """TfL reason for display: drop a leading 'LINE NAME:' echo of the tile title, calm all-caps text."""
+    t = re.sub(r"\s+", " ", text or "").strip()
+    base = re.sub(r"\s+line$", "", (name or "").strip(), flags=re.I)
+    if base:
+        t = re.sub(r"^" + re.escape(base) + r"(\s+line)?\s*:\s*", "", t, flags=re.I)
+    t = re.sub(r"^[A-Z][A-Z &'.-]{2,40}:\s*", "", t)   # other network labels, e.g. "LONDON TRAMS:"
+    letters = [c for c in t if c.isalpha()]
+    if letters and sum(c.isupper() for c in letters) / len(letters) > 0.9:
+        t = t[:1].upper() + t[1:].lower()
+    return t
+
+
+def _open_any(path):
+    return gzip.open(path, "rt", encoding="utf-8") if path.endswith(".gz") else open(path, encoding="utf-8")
+
+
+def nr_incident_lookup(data_dir):
+    """url -> readable incident, from the latest stored version of every KB incident (newOrChanged XML)."""
+    latest = {}
+    for f in sorted(glob.glob(os.path.join(data_dir, "nationalRailIncidents", "*.ndjson*"))):
+        try:
+            with _open_any(f) as fh:
+                for line in fh:
+                    try:
+                        r = json.loads(line)
+                    except ValueError:
+                        continue
+                    for n in r.get("newOrChanged") or []:
+                        i, v, x = n.get("id"), str(n.get("version") or ""), n.get("xml")
+                        if i and x and (i not in latest or v >= latest[i][0]):
+                            latest[i] = (v, x)
+        except (OSError, EOFError):
+            continue
+    by_url = {}
+    for i, (v, x) in latest.items():
+        for u in re.findall(r"<(?:\w+:)?Uri>\s*([^<]+?)\s*</(?:\w+:)?Uri>", x):
+            by_url.setdefault(norm_url(u), i)
+    cache = {}
+
+    def parse(i):
+        import xml.etree.ElementTree as ET
+        try:
+            el = ET.fromstring(latest[i][1])
+        except Exception:
+            return None
+        loc = lambda t: t.rsplit("}", 1)[-1]
+        def first(name):
+            for y in el.iter():
+                if loc(y.tag) == name and (y.text or "").strip():
+                    return y.text.strip()
+            return None
+        links = [y.text.strip() for y in el.iter() if loc(y.tag) == "Uri" and (y.text or "").strip()]
+        rb = html_blocks(first("RoutesAffected"), 600)
+        return {"id": i, "summary": first("Summary"), "routes": "\n".join(list(b.values())[0] for b in rb) or None,
+                "body": html_blocks(first("Description"), 4000), "planned": (first("Planned") or "").lower() == "true",
+                "start": first("StartTime"), "end": first("EndTime"), "updated": first("LastChangedDate"),
+                "link": links[0] if links else None}
+
+    def look(url):
+        i = by_url.get(norm_url(url)) if url else None
+        if not i:
+            return None
+        if i not in cache:
+            cache[i] = parse(i)
+        return cache[i]
+    return look
+
+
+def _inline_incident(m):
+    """Incident words stored with the line status by the collector (from 25 Oct 2026)."""
+    body = []
+    for ln in (m.get("message") or "").split("\n"):
+        ln = ln.strip()
+        if ln:
+            body.append({"li": ln[2:]} if ln.startswith("\u2022 ") else {"p": ln})
+    return {"id": m.get("id"), "summary": m.get("summary"), "routes": m.get("routes"), "body": body,
+            "planned": m.get("planned"), "start": m.get("start"), "end": m.get("end"), "updated": None, "link": None}
+
+
+KIND = {"PlannedWork": "planned", "RealTime": "live", "Information": "info"}
+
+
+def line_details(x, lookup):
+    """Non-good statuses of one line, grouped by message (TfL often repeats one reason under two statuses)."""
+    groups = []
+    for st in x.get("statuses") or []:
+        if not isinstance(st, dict):
+            continue
+        sv = st.get("severity")
+        if sv == 10 or st.get("description") == "Good Service":
+            continue
+        cat = cat_of(sv) if isinstance(sv, int) else 2
+        raw = (st.get("reason") or "").strip()
+        is_url = bool(re.match(r"https?://", raw))
+        inc = None
+        if is_url:
+            inc = lookup(raw)
+            if not inc and isinstance(st.get("nrIncident"), dict):
+                inc = _inline_incident(st["nrIncident"])
+        text = None if is_url else (tidy_reason(raw, x.get("name")) or None)
+        key = (text, inc["id"] if inc else (raw if is_url else None))
+        vp = [v for v in (st.get("validity") or []) if isinstance(v, list) and len(v) == 2]
+        dis = st.get("disruption") or {}
+        kind = ("planned" if inc.get("planned") else "live") if inc else KIND.get(dis.get("category"), "info")
+        g = next((g for g in groups if g["_k"] == key), None)
+        if g is None:
+            g = {"_k": key, "_c": [], "statuses": [], "cat": cat, "kind": kind, "text": text,
+                 "from": None, "until": None, "source": "National Rail" if is_url else "TfL",
+                 "incident": inc, "link": (inc.get("link") if inc else None) or (raw if is_url else None)}
+            groups.append(g)
+        g["_c"].append((cat, st.get("description")))
+        g["cat"] = max(g["cat"], cat)
+        for a, b in vp:
+            if a and (g["from"] is None or a < g["from"]): g["from"] = a
+            if b and (g["until"] is None or b > g["until"]): g["until"] = b
+    for g in groups:
+        seen = []
+        for _, d in sorted(g.pop("_c"), key=lambda t: -t[0]):
+            if d and d not in seen:
+                seen.append(d)
+        g["statuses"] = seen
+        g.pop("_k")
+    groups.sort(key=lambda g: -g["cat"])
+    return groups
+
+
+def line_history(LS, slot_now, hours=24):
+    """{line id: [cat per hour, oldest -> newest]} for the last `hours` readings (None = no reading)."""
+    end = pts(slot_now)
+    out = {}
+    for i in range(hours):
+        s = fts(end - datetime.timedelta(hours=hours - 1 - i))
+        for x in (LS.get(s) or {}).get("lines", []) or []:
+            out.setdefault(x.get("id"), [None] * hours)[i] = line_worst(line_statuses(x))[0]
+    return out
+
+
 def now_and_observations(D, S, last_global, cutoff7, data_dir="data"):
     """Current line board and a short list of computed observations for the dashboard."""
     now_board, obs = {}, []
     LS, LF, SD = D["lineStatus"], D["liftDisruptions"], D["stopDisruptions"]
     if LS:
         s = max(LS); tiles = []
+        look, hist = nr_incident_lookup(data_dir), line_history(LS, s)
         for x in LS[s].get("lines", []) or []:
             cat, lab = line_worst(line_statuses(x))
             reasons = [st.get("reason") for st in (x.get("statuses") or []) if isinstance(st, dict) and st.get("reason")]
-            tiles.append(dict(id=x.get("id"), name=x.get("name"), mode=line_mode(x), cat=cat, status=lab, reason=(reasons[0][:240] if reasons else None)))
+            tiles.append(dict(id=x.get("id"), name=x.get("name"), mode=line_mode(x), cat=cat, status=lab, reason=(reasons[0][:240] if reasons else None),
+                              details=line_details(x, look), hist=hist.get(x.get("id"))))
         tiles.sort(key=lambda t: (t["mode"] == "national-rail", -(t["cat"] if t["cat"] is not None else -1), t["name"] or ""))
         def obs_group(key, group, label):
             if not group: return
