@@ -40,8 +40,10 @@ def sample(d):
         ["2026-10-25T09:00:00", "2026-10-25T09:00:00", False], ["2026-10-25T09:05:00", "2026-10-25T09:12:00", False],
         ["2026-10-25T09:10:00", None, True]]}}}], gz=True)
     put(d, "nationalRailIncidents", DAY, [{"slot": f"{DAY}T09:00:00Z", "count": 10, "planned": 7}], gz=True)
-    put(d, "_health", DAY, [{"slot": f"{DAY}T09:00:00Z", "datasets": {"arrivalsNetwork": {"status": "ok"}, "crowdingNetwork": {"status": "failed"},
-                                                                       "stationAccess": {"status": "ok"}}}])
+    put(d, "_health", DAY, [{"slot": f"{DAY}T09:00:00Z", "startedAt": f"{DAY}T09:00:18Z", "durationS": 249.4, "requests": 120, "retries": 2,
+                             "http429": 0, "keyUsed": True, "nrStatus": {"200": 32, "500": 2},
+                             "datasets": {"arrivalsNetwork": {"status": "ok"}, "crowdingNetwork": {"status": "failed"},
+                                          "stationAccess": {"status": "ok"}}}])
 
 
 class RollupTests(unittest.TestCase):
@@ -68,6 +70,11 @@ class RollupTests(unittest.TestCase):
             self.assertEqual((cov["arrivalsNetwork"][9], cov["crowdingNetwork"][9]), (1, 0))
             self.assertEqual(cov["stationAccess"], 1)            # daily dataset: present that day
             self.assertEqual(cov["nationalRailStations"], 0)
+            run = R["runs"][0]
+            self.assertEqual((run["h"], run["t"], run["d"], run["q"], run["r"], run["x"], run["k"], run["nr"], run["bad"]),
+                             (9, f"{DAY}T09:00:18Z", 249.4, 120, 2, 0, True, {"200": 32, "500": 2}, ["crowdingNetwork"]))
+            self.assertGreater(R["bytes"]["lineStatus"], 0)
+            self.assertNotIn("arrivalsNetwork", R["bytes"])          # no file that day -> no entry
 
     def test_rebuild_only_when_sources_change_and_never_removes_days(self):
         with tempfile.TemporaryDirectory() as d:
@@ -89,6 +96,14 @@ class RollupTests(unittest.TestCase):
             self.assertEqual((idx["covFirst"]["lineStatus"], idx["covFirst"]["busLineStatus"], idx["covFirst"]["stationAccess"]),
                              (f"{DAY}T08:00:00Z", f"{DAY}T09:00:00Z", f"{DAY}T00:00:00Z"))
             self.assertNotIn("nationalRailStations", idx["covFirst"])
+            self.assertGreater(idx["bytes"]["lineStatus"], 0)
+            self.assertEqual(idx["goLive"], "2026-10-24T21:00:00Z")
+            L = idx["live"]
+            self.assertEqual(L["through"], f"{DAY}T09:00:00Z")
+            self.assertEqual(L["byDs"]["lineStatus"], [2, 2])            # 08:00 and 09:00 recorded
+            self.assertEqual(L["byDs"]["arrivalsNetwork"], [1, 1])
+            self.assertNotIn("crowdingNetwork", L["byDs"])              # never recorded yet: not counted as missing
+            self.assertEqual(L["streak"], 2)                             # 08:00 and 09:00 complete for every started dataset
 
 
 if __name__ == "__main__":

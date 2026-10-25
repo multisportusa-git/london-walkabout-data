@@ -17,7 +17,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aggregate import line_statuses, line_worst, line_mode, tidy_reason  # noqa: E402
 from collect import DATASETS as ALL_DATASETS, DAILY_AT_UTC  # noqa: E402
 
-VERSION = 2  # bump to rebuild every day file when the format changes
+VERSION = 3  # bump to rebuild every day file when the format changes
+GO_LIVE = "2026-10-24T21:00:00Z"   # new collector took over (old Claude task before this)
+INCIDENT = ["2026-09-22T15:00:00Z", "2026-09-25T15:00:00Z"]
 READ = ["lineStatus", "busLineStatus", "liftDisruptions", "stopDisruptions", "crowdingReadings",
         "nationalRailDepartures", "nationalRailIncidents", "arrivalsReadings"]
 DAY_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})\.ndjson(\.gz)?$")
@@ -48,7 +50,7 @@ def read_day(data, ds, day):
 
 
 def health_day(data, day):
-    """[(slot, {dataset: status})] from the run health lines (several runs per slot are possible)."""
+    """[(slot, {dataset: status}, line)] from the run health lines (several runs per slot are possible)."""
     out = []
     p = os.path.join(data, "_health", day + ".ndjson")
     if os.path.exists(p):
@@ -59,7 +61,7 @@ def health_day(data, day):
                 except ValueError:
                     continue
                 if isinstance(r, dict) and str(r.get("slot", "")).startswith(day):
-                    out.append((r["slot"], {k: (v or {}).get("status") for k, v in (r.get("datasets") or {}).items()}))
+                    out.append((r["slot"], {k: (v or {}).get("status") for k, v in (r.get("datasets") or {}).items()}, r))
     return out
 
 
@@ -175,10 +177,14 @@ def roll_day(data, day):
         seen.setdefault("nationalRailIncidents", set()).add(H(s))
     for s in read_day(data, "arrivalsReadings", day):
         seen.setdefault("arrivalsReadings", set()).add(H(s))
-    for s, st in health_day(data, day):
+    runs = []
+    for s, st, r in health_day(data, day):
         for ds, v in st.items():
             if v in ("ok", "partial"):
                 seen.setdefault(ds, set()).add(H(s))
+        runs.append({"h": H(s), "t": r.get("startedAt"), "d": r.get("durationS"), "q": r.get("requests"), "r": r.get("retries"),
+                     "x": r.get("http429"), "k": r.get("keyUsed"), "nr": r.get("nrStatus") or {},
+                     "bad": sorted(ds for ds, v in st.items() if v == "failed")})
     for ds, hours in seen.items():
         if ds not in cov:
             continue
@@ -186,7 +192,12 @@ def roll_day(data, day):
             cov[ds] = 1 if hours else 0
         else:
             for h in hours: cov[ds][h] = 1
-    return {"day": day, "v": VERSION, "src": src_sizes(data, day), "lines": lines, "m": m, "crowd": crowd, "cov": cov}
+    size = {}
+    for ds in ALL_DATASETS:
+        n = sum(os.path.getsize(p) for p in day_files(data, ds, day))
+        if n: size[ds] = n
+    return {"day": day, "v": VERSION, "src": src_sizes(data, day), "lines": lines, "m": m, "crowd": crowd, "cov": cov,
+            "runs": runs, "bytes": size}
 
 
 def update(data):
@@ -215,7 +226,7 @@ def update(data):
 def index(data):
     d = os.path.join(data, "_rollup", "day")
     days = sorted(f[:10] for f in os.listdir(d) if f.endswith(".json")) if os.path.isdir(d) else []
-    first_slot, cov_first = None, {}
+    first_slot, cov_first, total = None, {}, {}
     for day in days:
         try:
             with open(os.path.join(d, day + ".json"), encoding="utf-8") as fh:
@@ -225,12 +236,51 @@ def index(data):
         hrs = [h for l in R.get("lines", {}).values() for h, c in enumerate(l["c"]) if c is not None]
         if hrs and not first_slot:
             first_slot = f"{day}T{min(hrs):02d}:00:00Z"
+        for ds, n in (R.get("bytes") or {}).items():
+            total[ds] = total.get(ds, 0) + n
         for ds, v in (R.get("cov") or {}).items():   # first hour each dataset was recorded (gaps are measured from there)
             if ds in cov_first: continue
             h = (0 if v else None) if not isinstance(v, list) else next((i for i, x in enumerate(v) if x), None)
             if h is not None: cov_first[ds] = f"{day}T{h:02d}:00:00Z"
-    return {"v": VERSION, "days": days, "first": days[0] if days else None, "last": days[-1] if days else None,
-            "firstSlot": first_slot, "covFirst": cov_first}
+    live = go_live_health(d, days, cov_first)
+    return {"v": VERSION, "days": days, "first": days[0] if days else None, "last": days[-1] if days else None, "live": live,
+            "firstSlot": first_slot, "covFirst": cov_first, "bytes": total, "goLive": GO_LIVE, "incident": INCIDENT}
+
+
+def go_live_health(d, days, cov_first):
+    """Hours recorded since the new collector went live, per hourly dataset, and the current run of
+    consecutive hours in which every started hourly dataset was recorded."""
+    hourly = [ds for ds in ALL_DATASETS if ds not in DAILY_AT_UTC]
+    grid = {}   # slot -> {ds: 0/1}
+    for day in days:
+        if day < GO_LIVE[:10]:
+            continue
+        try:
+            with open(os.path.join(d, day + ".json"), encoding="utf-8") as fh:
+                cov = json.load(fh).get("cov") or {}
+        except (OSError, ValueError):
+            continue
+        for h in range(24):
+            slot = f"{day}T{h:02d}:00:00Z"
+            if slot >= GO_LIVE:
+                grid[slot] = {ds: (cov.get(ds) or [0] * 24)[h] for ds in hourly}
+    filled = [sl for sl, v in grid.items() if v.get("lineStatus")]
+    if not filled:
+        return None
+    through = max(filled)
+    by = {}
+    for sl, v in grid.items():
+        if sl > through: continue
+        for ds in hourly:
+            if ds in cov_first and sl >= max(GO_LIVE, cov_first[ds]):
+                b = by.setdefault(ds, [0, 0]); b[1] += 1; b[0] += 1 if v.get(ds) else 0
+    streak = 0
+    for sl in sorted((x for x in grid if x <= through), reverse=True):
+        need = [ds for ds in hourly if ds in cov_first and sl >= cov_first[ds]]
+        if need and all(grid[sl].get(ds) for ds in need): streak += 1
+        else: break
+    return {"through": through, "present": sum(b[0] for b in by.values()), "expected": sum(b[1] for b in by.values()),
+            "byDs": by, "streak": streak}
 
 
 def main(argv=None):

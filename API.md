@@ -42,3 +42,6 @@ let url = URL(string: "https://multisportusa-git.github.io/london-walkabout-data
 let (data, _) = try await URLSession.shared.data(from: url)
 let latest = try JSONSerialization.jsonObject(with: data) as! [String: Any]
 ```
+
+## Daily rollups (from 25 Oct 2026)
+`…/rollups/index.json` lists the days (`days`), when each dataset was first recorded (`covFirst`), archive bytes per dataset (`bytes`), and `live` = hours recorded since go-live (24 Oct 21:00 UTC) per dataset plus the current complete-hour `streak`. `…/rollups/day/<YYYY-MM-DD>.json` (UTC day) holds, per hour (array index = UTC hour): `lines.<id>.c` status category (0 good … 5 closed), `lines.<id>.r` message → hours in force, `m` network metrics (buses, NR boards, NR incidents, lifts, station notices), `crowd` % of normal per tracked station, `cov` which datasets were recorded, `runs` (each collector run: start, seconds, requests, retries, 429s, NR status codes, failed datasets) and `bytes` stored per dataset. Built by `collector/rollup.py` each hourly run; derived from the raw files, never removed.
