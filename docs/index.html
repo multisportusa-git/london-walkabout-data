@@ -1409,7 +1409,7 @@ function rtMap(host,infos){var mapEl=host.querySelector(".rtmap");if(!mapEl)retu
   infos.forEach(function(r,i){if(!r.path&&!r.ll)return;var ll=r.ll||r.path.map(function(id){return[LRT.stops[id][1],LRT.stops[id][2]]}),col=css.getPropertyValue(RLC[r.light]).trim();
    if(prev&&!r.brk&&Math.abs(prev[0]-ll[0][0])+Math.abs(prev[1]-ll[0][1])>0.0005)L.polyline([prev,ll[0]],{color:css.getPropertyValue("--c5").trim(),weight:3,dashArray:"4 8",interactive:false}).addTo(M);
    var pl=L.polyline(ll,{color:col,weight:8,opacity:.95,lineCap:"round",lineJoin:"round",dashArray:r.dash?"14 10":null}).addTo(M);
-   pl.bindPopup(function(){return legSummary(r,i,host)},{maxWidth:300,maxHeight:240,autoPanPadding:[24,24]});pl.bindTooltip(r.name+": "+r.a+" to "+r.b+" — "+(RLT[r.light]));
+   pl.bindPopup(function(){return legSummary(r,i,host)},{maxWidth:Math.max(180,Math.min(300,mapEl.clientWidth-90)),maxHeight:240,autoPanPadding:[16,16]});pl.bindTooltip(r.name+": "+r.a+" to "+r.b+" — "+(RLT[r.light]));
    ll.forEach(function(c){all.push(c);if(!r.dash)L.circleMarker(c,{radius:3,color:"#fff",weight:1,fillColor:"#333",fillOpacity:1,interactive:false}).addTo(M)});
    layers[i]=pl;prev=ll[ll.length-1];
    if(i===0||r.brk||(i>0&&!infos[i-1].path&&!infos[i-1].ll))L.circleMarker(ll[0],{radius:7,color:"#fff",weight:2,fillColor:"#333",fillOpacity:1,interactive:false}).bindTooltip(r.a,{permanent:true,direction:"top"}).addTo(M);
