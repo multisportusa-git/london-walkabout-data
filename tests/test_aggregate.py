@@ -139,5 +139,31 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(h["circle"][-3], 0)
 
 
+class NrReasonsPublishTests(unittest.TestCase):
+    """The page always fetches rollups/nrReasons.json, so it must always exist (an empty object until the
+    Darwin reason list has been fetched) and never cause a 404 in the browser console."""
+
+    def test_empty_object_when_no_reference_file(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "data").mkdir(); out = Path(d) / "out"
+            aggregate.publish_nr_reasons(str(Path(d) / "data"), str(out))
+            self.assertEqual(json.loads((out / "rollups" / "nrReasons.json").read_text()), {})
+
+    def test_copies_the_reference_file_when_present(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "data").mkdir(); (Path(d) / "config").mkdir(); out = Path(d) / "out"
+            ref = {"canc": {"681": "cancelled text"}, "late": {"681": "late text"}, "fetched": "2026-10-25"}
+            (Path(d) / "config" / "nrReasonCodes.json").write_text(json.dumps(ref))
+            aggregate.publish_nr_reasons(str(Path(d) / "data"), str(out))
+            self.assertEqual(json.loads((out / "rollups" / "nrReasons.json").read_text()), ref)
+
+    def test_broken_reference_file_gives_empty_object_not_an_error(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "data").mkdir(); (Path(d) / "config").mkdir(); out = Path(d) / "out"
+            (Path(d) / "config" / "nrReasonCodes.json").write_text("{not json")
+            aggregate.publish_nr_reasons(str(Path(d) / "data"), str(out))
+            self.assertEqual(json.loads((out / "rollups" / "nrReasons.json").read_text()), {})
+
+
 if __name__ == "__main__":
     unittest.main()

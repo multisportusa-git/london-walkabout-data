@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aggregate import line_statuses, line_worst, line_mode, tidy_reason  # noqa: E402
 from collect import DATASETS as ALL_DATASETS, DAILY_AT_UTC  # noqa: E402
 
-VERSION = 6  # bump to rebuild every day file when the format changes
+VERSION = 7  # bump to rebuild every day file when the format changes
 GO_LIVE = "2026-10-24T21:00:00Z"   # new collector took over (old Claude task before this)
 INCIDENT = ["2026-09-22T15:00:00Z", "2026-09-25T15:00:00Z"]
 READ = ["lineStatus", "busLineStatus", "arrivalsNetwork", "crowdingNetwork", "liftDisruptions", "stopDisruptions", "crowdingReadings",
@@ -151,20 +151,24 @@ def nr_board(rec):
 
 
 def nr_detail(rec, h, nrs, nro, blank):
-    """Per station (CRS) and per operator: departures, cancelled, 5+ min late; per station mean loading %."""
+    """Per station (CRS) and per operator: departures, cancelled, 5+ min late; per station mean loading %.
+    Also Darwin reason codes, sparse as {code: {hour: n}}: rc = cancelReason on cancelled services,
+    rl = delayReason on running ones (any delay). Boards recorded without those fields give empty maps."""
     F = rec.get("fields") or []
     ix = {f: F.index(f) for f in ("std", "etd", "isCancelled", "operatorCode", "loadingPct") if f in F}
     if len(ix) < 4: return
+    i_cr = F.index("cancelReason") if "cancelReason" in F else None
+    i_dr = F.index("delayReason") if "delayReason" in F else None
     for crs, b in (rec.get("stations") or {}).items():
         svs = (b or {}).get("services")
         if svs is None:   # board unavailable this hour
             continue
-        S = nrs.setdefault(crs, {"d": blank(), "c": blank(), "l": blank(), "ld": blank()})
+        S = nrs.setdefault(crs, {"d": blank(), "c": blank(), "l": blank(), "ld": blank(), "rc": {}, "rl": {}})
         if S["d"][h] is None: S["d"][h], S["c"][h], S["l"][h] = 0, 0, 0
         ld = []
         for sv in svs:
             op = sv[ix["operatorCode"]] or "?"
-            O = nro.setdefault(op, {"d": blank(), "c": blank(), "l": blank()})
+            O = nro.setdefault(op, {"d": blank(), "c": blank(), "l": blank(), "rc": {}, "rl": {}})
             late = 0
             canc = 1 if sv[ix["isCancelled"]] else 0
             if not canc:
@@ -172,8 +176,13 @@ def nr_detail(rec, h, nrs, nro, blank):
                     late = 1 if (datetime.datetime.fromisoformat(sv[ix["etd"]]) - datetime.datetime.fromisoformat(sv[ix["std"]])).total_seconds() >= 300 else 0
                 except Exception:
                     late = 0
+            i_r = i_cr if canc else i_dr
+            code = sv[i_r] if i_r is not None and i_r < len(sv) else None
             for X in (S, O):
                 X["d"][h] = (X["d"][h] or 0) + 1; X["c"][h] = (X["c"][h] or 0) + canc; X["l"][h] = (X["l"][h] or 0) + late
+                if code is not None and code != "":
+                    per_hour = X["rc" if canc else "rl"].setdefault(str(code), {})
+                    per_hour[str(h)] = per_hour.get(str(h), 0) + 1
             if "loadingPct" in ix and isinstance(sv[ix["loadingPct"]], (int, float)): ld.append(sv[ix["loadingPct"]])
         if ld: S["ld"][h] = round(sum(ld) / len(ld), 1)
 

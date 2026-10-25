@@ -104,6 +104,46 @@ class RollupTests(unittest.TestCase):
             self.assertEqual((R["nro"]["SN"]["d"][9], R["nro"]["SN"]["l"][9], R["nro"]["SE"]["c"][9]), (2, 1, 1))
             self.assertNotIn("CHX", R["nrs"])          # board unavailable that hour: no figures
 
+    def test_nr_reason_counts(self):
+        """Darwin reason codes are counted per station and operator, sparsely as {code: {hour: n}}:
+        cancelReason on cancelled services, delayReason on running ones (whatever the delay)."""
+        with tempfile.TemporaryDirectory() as d:
+            put(d, "nationalRailDepartures", DAY, [
+                {"slot": f"{DAY}T09:00:00Z",
+                 "fields": ["std", "etd", "isCancelled", "operatorCode", "loadingPct", "cancelReason", "delayReason"],
+                 "stations": {"VIC": {"services": [
+                     ["2026-10-25T09:00:00", "2026-10-25T09:00:00", False, "SN", None, None, None],      # on time
+                     ["2026-10-25T09:05:00", "2026-10-25T09:12:00", False, "SN", None, None, 681],       # 7 min late
+                     ["2026-10-25T09:10:00", None, True, "SE", None, 901, None],                          # cancelled with a reason
+                     ["2026-10-25T09:15:00", "2026-10-25T09:27:00", False, "SN", None, None, 681],       # 12 min late, same reason
+                     ["2026-10-25T09:20:00", None, True, "SN", None, None, None],                         # cancelled, no reason given
+                     ["2026-10-25T09:25:00", "2026-10-25T09:28:00", False, "SN", None, None, 820]]},     # 3 min late, reason given
+                     "CHX": {"services": None}}},
+                {"slot": f"{DAY}T10:00:00Z",
+                 "fields": ["std", "etd", "isCancelled", "operatorCode", "loadingPct", "cancelReason", "delayReason"],
+                 "stations": {"VIC": {"services": [
+                     ["2026-10-25T10:05:00", "2026-10-25T10:20:00", False, "SN", None, None, 681],
+                     ["2026-10-25T10:10:00", None, True, "SE", None, 901, None]]}}}], gz=True)
+            rollup.update(d)
+            R = json.loads((Path(d) / "_rollup" / "day" / f"{DAY}.json").read_text())
+            V = R["nrs"]["VIC"]
+            self.assertEqual(V["rl"], {"681": {"9": 2, "10": 1}, "820": {"9": 1}})
+            self.assertEqual(V["rc"], {"901": {"9": 1, "10": 1}})
+            self.assertEqual(R["nro"]["SN"]["rl"], {"681": {"9": 2, "10": 1}, "820": {"9": 1}})
+            self.assertEqual(R["nro"]["SN"]["rc"], {})                    # SN's one cancellation had no reason code
+            self.assertEqual(R["nro"]["SE"]["rc"], {"901": {"9": 1, "10": 1}})
+            self.assertEqual(R["nro"]["SE"]["rl"], {})
+            self.assertEqual((V["c"][9], V["d"][9]), (2, 6))              # existing figures unchanged
+            self.assertNotIn("CHX", R["nrs"])
+
+    def test_nr_boards_without_reason_fields_still_roll_up(self):
+        """Records from before the reason fields existed (or without them) give empty reason maps, not errors."""
+        with tempfile.TemporaryDirectory() as d:
+            sample(d)
+            rollup.update(d)
+            R = json.loads((Path(d) / "_rollup" / "day" / f"{DAY}.json").read_text())
+            self.assertEqual((R["nrs"]["VIC"]["rc"], R["nrs"]["VIC"]["rl"], R["nro"]["SN"]["rl"]), ({}, {}, {}))
+
     def test_rebuild_only_when_sources_change_and_never_removes_days(self):
         with tempfile.TemporaryDirectory() as d:
             sample(d)

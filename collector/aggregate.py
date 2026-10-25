@@ -810,6 +810,25 @@ def main():
     with open(os.path.join(a.out, "latest.json"), "w", encoding="utf-8") as fh: json.dump(L, fh, separators=(",", ":"), ensure_ascii=False)
     print(f"wrote {out} ({os.path.getsize(out)} bytes), latest.json; dataThrough={last_global}")
     publish_rollups(a.data, a.out)
+    publish_nr_reasons(a.data, a.out)
+
+
+def publish_nr_reasons(data_dir, out_dir):
+    """Darwin delay/cancellation reason texts for the page, as rollups/nrReasons.json:
+    {"canc": {code: text}, "late": {code: text}, ...} copied from config/nrReasonCodes.json (next to the data
+    folder, like stationNames.json). Always written, as {} until that file exists or if it is unreadable, so the
+    page's request never 404s and the reason chart falls back to showing the numeric codes."""
+    ref = {}
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(data_dir)), "config", "nrReasonCodes.json"), encoding="utf-8") as fh:
+            j = json.load(fh)
+        if isinstance(j, dict):
+            ref = j
+    except (OSError, ValueError):
+        pass
+    os.makedirs(os.path.join(out_dir, "rollups"), exist_ok=True)
+    with open(os.path.join(out_dir, "rollups", "nrReasons.json"), "w", encoding="utf-8") as fh:
+        json.dump(ref, fh, separators=(",", ":"), ensure_ascii=False)
 
 
 def publish_rollups(data_dir, out_dir):
