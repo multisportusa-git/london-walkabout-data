@@ -292,6 +292,22 @@ section.sx.closed .sb{display:none}section.sx.closed .sh .lede{display:none}
 .sh-m{display:flex;gap:4px;flex:none}.sh-m button{all:unset;box-sizing:border-box;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--sub);border:1px solid var(--rule);background:var(--card)}
 .sh-m button svg{width:16px;height:16px}.sh-m button:hover:not(:disabled){color:var(--ink);border-color:var(--sc)}.sh-m button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}.sh-m button:disabled{opacity:.3;cursor:default}
 @media (max-width:560px){.sh-m button{width:28px;height:28px}.sh{gap:8px;padding:12px}}
+/* My lines */
+.fav{margin:6px 0 14px;padding:16px}.fhead{display:grid;gap:10px;grid-template-columns:1fr minmax(240px,360px);align-items:start}.fhead h3{margin:0;font-size:16px;font-weight:800}
+.fpick{position:relative}.fpick input{width:100%;font:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--rule);border-radius:12px;background:var(--bg);color:var(--ink)}.fpick input:disabled{opacity:.6}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:12px;grid-auto-flow:row dense}.fgrid .lp{grid-column:1/-1;margin:0}
+.fcard{position:relative;display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;gap:4px 12px;align-items:center;padding:12px 34px 12px 12px;border-radius:16px;border:1px solid var(--rule);background:var(--bg);border-left:6px solid var(--lc,var(--c5));cursor:pointer;transition:transform .14s,box-shadow .14s}
+.fcard:hover{transform:translateY(-2px);box-shadow:0 8px 22px #00000026}.fcard.open{box-shadow:0 0 0 2px var(--accent)}
+.fcard.red{--lc:var(--c4)}.fcard.amber{--lc:var(--c1)}.fcard.green{--lc:var(--c0)}.fcard.grey{--lc:var(--c5)}
+.fglyph{grid-row:1/3;width:44px;height:44px;border-radius:14px;display:grid;place-items:center}.fglyph svg{width:24px;height:24px}
+.fname{all:unset;display:flex;flex-direction:column;cursor:pointer;min-width:0}.fname b{font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fname span{font-size:12px;color:var(--sub)}.fname:focus-visible{outline:2px solid var(--accent);border-radius:6px}
+.flight{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800}.flight i{width:14px;height:14px;border-radius:50%;background:var(--lc);box-shadow:0 0 0 4px color-mix(in srgb,var(--lc) 25%,transparent)}
+.frm{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;border:0;background:transparent;color:var(--sub);font-size:16px;cursor:pointer}.frm:hover{background:var(--cm);color:var(--ink)}.frm:focus-visible{outline:2px solid var(--accent)}
+.flight-big{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,var(--lc) 12%,var(--card))}.flight-big i{width:28px;height:28px;border-radius:50%;background:var(--lc);box-shadow:0 0 0 6px color-mix(in srgb,var(--lc) 25%,transparent);flex:none}.flight-big b{display:block;font-size:18px;font-weight:800}.flight-big span{font-size:13px;color:var(--sub)}
+.flight-big.red{--lc:var(--c4)}.flight-big.amber{--lc:var(--c1)}.flight-big.green{--lc:var(--c0)}.flight-big.grey{--lc:var(--c5)}
+.fimp{padding:12px 14px;border-radius:14px;background:var(--bg)}.fimp p{margin:4px 0;font-size:14px}.fimp dl{display:grid;grid-template-columns:120px 1fr;gap:6px 12px;margin:8px 0 0}.fimp dt{font-weight:800;font-size:13px}.fimp dd{margin:0;font-size:14px;line-height:1.5}
+.fempty{margin:10px 0 0}
+@media (max-width:640px){.fhead{grid-template-columns:1fr}.fimp dl{grid-template-columns:1fr}.fimp dt{margin-top:4px}}
 </style>
 </head>
 <body>
@@ -522,7 +538,7 @@ function glance(S){
  var TN=G.trainsNow;if(TN&&TN.modes){var ML={tube:"Tube","elizabeth-line":"Elizabeth line",overground:"Overground",dlr:"DLR",tram:"Tram","river-bus":"River bus"},ks=Object.keys(ML).filter(function(k){return TN.modes[k]}),mx2=Math.max.apply(null,ks.map(function(k){return TN.modes[k].predictions}).concat([1]));
   cards.push(gcard("#arrivals","Live predictions across the network",[el("div",{class:"big"},[num(ks.reduce(function(a,k){return a+TN.modes[k].predictions},0)),el("small",null,[" arrivals predicted"])]),el("div",{class:"cap"},[fmtSlot(TN.slot)])].concat(ks.map(function(k){var m=TN.modes[k];return bar(ML[k],m.predictions/mx2,num(m.predictions))})),"Live predictions"))}
  else cards.push(gcard("#arrivals","Live predictions across the network",[el("div",{class:"cap"},["Every TfL mode, network-wide: starts with the next hourly reading."])],"Live predictions"));
- return el("section",{id:"glance"},[el("h2",null,["At a glance"]),el("p",{class:"lede"},["The latest hourly reading, what changed since the hour before, and how fresh the data is. Tap a card to explore it."]),el("div",{id:"chg-host"}),el("div",{class:"gl"},cards)])}
+ return el("section",{id:"glance"},[el("h2",null,["At a glance"]),el("p",{class:"lede"},["Your favourite lines, what changed since the hour before, how fresh the data is, and the latest hourly reading. Tap anything to explore it."]),el("div",{id:"chg-host"}),el("div",{id:"fav-host",class:"card fav"}),el("div",{class:"gl"},cards)])}
 
 /* ---------- crowding drill-down ---------- */
 var CN=null,CNP=null,SEL=null;
@@ -822,7 +838,7 @@ function refreshRange(){var w=win();drawBar();drawChips();if(!w)return;
  var ctxS=w.e-23*36e5,need0=Math.min(w.ps,ctxS-24*36e5,w.e-8*864e5);
  return (IDX?Promise.resolve(IDX):loadIdx()).then(function(){if(!IDX){var S=window.__S,h=document.getElementById("obs-host");if(h&&S)h.parentNode.replaceChild(observations(S).querySelector(".obs")||el("div"),h);[["lines-host",lines],["hs-host",health]].forEach(function(x){var e=document.getElementById(x[0]);if(e&&S){e.innerHTML="";try{e.appendChild(x[1](S))}catch(err){}}});return}
   drawBar();if(!rangeOK(rangeObj())){RG.k="now";writeURL();return refreshRange()}
-  return loadDays(need0,w.e).then(function(){var heat=w.H>=168;RS={w:w,cur:agg(w.s,w.e,heat),prev:agg(w.ps,w.pe,false),ctx:agg(ctxS,w.e,false),ctxPrev:agg(ctxS-24*36e5,ctxS-36e5,false),cw:{s:ctxS,e:w.e,H:24,label:"last 24 h"}};drawObs();drawLines();try{drawNR()}catch(e){console.warn(e)}try{drawBus()}catch(e){console.warn(e)}try{drawChanges()}catch(e){console.warn(e)}loadCN().then(function(){try{drawLifts2()}catch(e){console.warn(e)}try{drawStations2()}catch(e){console.warn(e)}});try{drawCrowd2()}catch(e){console.warn(e)}try{drawArrivals2()}catch(e){console.warn(e)}try{drawMap()}catch(e){console.warn(e)}try{drawHealth()}catch(e){var hh=document.getElementById("hs-host");if(hh)hh.appendChild(el("div",{class:"err"},["Could not draw data health: "+e.message]))}})})}
+  return loadDays(need0,w.e).then(function(){var heat=w.H>=168;RS={w:w,cur:agg(w.s,w.e,heat),prev:agg(w.ps,w.pe,false),ctx:agg(ctxS,w.e,false),ctxPrev:agg(ctxS-24*36e5,ctxS-36e5,false),cw:{s:ctxS,e:w.e,H:24,label:"last 24 h"}};drawObs();drawLines();try{drawNR()}catch(e){console.warn(e)}try{drawBus()}catch(e){console.warn(e)}try{drawChanges()}catch(e){console.warn(e)}try{drawFavs()}catch(e){console.warn(e)}loadCN().then(function(){try{drawLifts2()}catch(e){console.warn(e)}try{drawStations2()}catch(e){console.warn(e)}});try{drawCrowd2()}catch(e){console.warn(e)}try{drawArrivals2()}catch(e){console.warn(e)}try{drawMap()}catch(e){console.warn(e)}try{drawHealth()}catch(e){var hh=document.getElementById("hs-host");if(hh)hh.appendChild(el("div",{class:"err"},["Could not draw data health: "+e.message]))}})})}
 function rangeReload(){Object.keys(DAYS).forEach(function(d){if(DAYS[d]._fresh)delete DAYS[d]});IDX=null;refreshRange()}
 
 /* ---------- Data health (range-aware) ---------- */
@@ -1171,6 +1187,61 @@ function drawMap(){var host=document.getElementById("map-host");if(!host||!RS)re
   pts.sort(function(a,b){return b.r-a.r}).forEach(function(p){var m=L.circleMarker(p.ll,{radius:p.r,color:p.c,weight:2,fillColor:p.c,fillOpacity:.55}).addTo(LMAP);var div=document.createElement("div");div.innerHTML="<b></b><br><span></span><br>";div.querySelector("b").textContent=p.t;div.querySelector("span").textContent=p.d;var bt=document.createElement("button");bt.type="button";bt.className="fchip";bt.textContent="Details ↓";bt.onclick=function(){LMAP.closePopup();p.go()};div.appendChild(bt);m.bindPopup(div);m.bindTooltip(p.t)});
   leg.appendChild(el("span",{class:"small"},[nf(pts.length)+" stations, "+w.label+(W.now?" (Now shows the last 24 hours)":"")]));
   if(!pts.length)host.appendChild(el("p",{class:"small"},["Nothing to show for this layer in this range."]));setTimeout(function(){LMAP&&LMAP.invalidateSize()},50)}).catch(function(){host.innerHTML="";host.appendChild(el("p",{class:"small"},["The map could not load (map library or tiles unreachable)."]))})}
+
+/* ---------- My lines: up to 10 favourites with traffic-light status ---------- */
+var FAV_MAX=10,FSEL=null;
+function favGet(){try{var a=JSON.parse(localStorage.getItem("lw-favs")||"[]");return Array.isArray(a)?a.slice(0,FAV_MAX):[]}catch(e){return[]}}
+function favSave(a){try{localStorage.setItem("lw-favs",JSON.stringify(a.slice(0,FAV_MAX)))}catch(e){}}
+var GLYPH={train:"M7 3h10a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3zM4 10h16M8 14h.01M16 14h.01M8 17l-2 4M16 17l2 4",bus:"M6 3h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM4 11h16M7 15h.01M17 15h.01M7 18v2M17 18v2",tram:"M8 2h8M12 2v3M7 5h10a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM5 12h14M9 18l-2 3M15 18l2 3",boat:"M3 17c2 2 4 2 6 0 2 2 4 2 6 0 2 2 4 2 6 0M5 14l1-5h12l1 5M9 9V5h6v4",cable:"M2 4l20 4M12 6v4M7 10h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2zM5 14h14"};
+function glyphFor(m){return m==="bus"?"bus":m==="tram"?"tram":m==="river-bus"?"boat":m==="cable-car"?"cable":"train"}
+function isLight(c){var m=/^#([0-9a-f]{6})$/i.exec(c||"");if(!m)return false;var n=parseInt(m[1],16),r=(n>>16)/255,g=(n>>8&255)/255,b=(n&255)/255;return .2126*r+.7152*g+.0722*b>.55}
+function glyph(m,color){return el("span",{class:"fglyph",style:"background:"+color,"aria-hidden":"true"},[sv("svg",{viewBox:"0 0 24 24",fill:"none",stroke:isLight(color)?"#1b1b1b":"#fff","stroke-width":"2","stroke-linecap":"round","stroke-linejoin":"round"},[sv("path",{d:GLYPH[glyphFor(m)]})])])}
+var LIGHT={red:["Issue known","var(--c4)"],amber:["Possible issue","var(--c1)"],green:["Good to go","var(--c0)"],grey:["Not running now","var(--c5)"]};
+function lineLight(t){if(!t)return"grey";var c=t.cat,D=t.details||[];if(c===0)return"green";if(c===5)return"grey";
+ var kinds=D.map(function(d){return d.kind}),info=D.length&&kinds.every(function(k){return k==="info"});
+ if(t.mode==="national-rail"){var un=D.some(function(d){var s=(d.incident&&d.incident.summary)||"";return d.kind==="live"&&!/^\W*(cleared|lines? (have )?re-?opened|normal service)/i.test(s)});return info||D.every(function(d){return/^\W*(cleared|lines? (have )?re-?opened|normal service)/i.test((d.incident&&d.incident.summary)||"")})?"green":un?"red":"amber"}
+ if(c===3||c===4)return"red";if(info)return"green";return"amber"}
+function busLight(id){var bl=IDX&&IDX.busDays&&BUSD[IDX.busDays[IDX.busDays.length-1]];if(!bl)return{l:"grey",r:null};var h=null;for(var i=23;i>=0;i--)if(bl.t[i]!=null){h=i;break}var x=bl.routes[id];if(h==null)return{l:"grey",r:null};if(!x||!x.k[h])return{l:"green",r:x,h:h,d:bl};return{l:x.k[h]==="u"?"red":x.k[h]==="p"?"amber":"green",r:x,h:h,d:bl}}
+function favItems(){var N=((window.__S||{}).now||{}).lines||[];return favGet().map(function(f){if(f.t==="bus"){var b=busLight(f.id);return{f:f,name:"Bus "+f.id,mode:"bus",color:"var(--c4)",light:b.l,bus:b}}
+ var t=N.filter(function(x){return x.id===f.id})[0];return{f:f,name:t?t.name:f.id,mode:t?t.mode:"",color:LCOL[f.id]||(t&&t.mode==="national-rail"?"#5f636c":"var(--accent)"),light:lineLight(t),tile:t}})}
+function impactOf(text,status){var T=String(text||""),out=[],m;
+ var where=T.match(/(?:no service|part closure|suspended|reduced service|delays?)[^.]*?\bbetween ([^.,;]+?) and ([^.,;(]+)/i);if(where)out.push(["Where","Between "+where[1].trim()+" and "+where[2].trim()+"."]);
+ else if((m=T.match(/\b(?:at|from|to|towards) ([A-Z][\w'&.\- ]{2,40}(?: \([^)]+\))?)/)))out.push(["Where","Around "+m[1].trim()+"."]);
+ var when=T.match(/\b(until [^.,;]+|from \d{3,4}[^.,;]*|(?:Saturday|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday) \d{1,2}[^.,;]*|expected until [^.,;]+)/i);if(when)out.push(["When",when[1].charAt(0).toUpperCase()+when[1].slice(1)+"."]);
+ var alt=(T.match(/[^.]*(?:please use|use local|replacement bus|tickets will be accepted|alternative|instead|bus service [A-Z]?\d+|allow extra time)[^.]*\./ig)||[]).slice(0,3);alt.forEach(function(a){out.push(["What to do",a.trim()])});
+ var adv={"Minor Delays":"Trains are running with short delays: allow a few extra minutes.","Severe Delays":"Expect long waits and crowded trains: allow plenty of extra time or use another route.","Reduced Service":"Fewer trains than usual: expect longer waits.","Part Closure":"Part of the line is not running: check whether your stations are in the closed section.","Part Suspended":"Part of the line is suspended: avoid the affected section or use the alternatives below.","Suspended":"The line is not running: use another route.","Planned Closure":"The line is closed as planned: use another route.","Service Closed":"Not running at this hour.","Special Service":"Services are changed: check the notice below before you travel.","Bus Service":"Buses replace trains on part of the route."}[status];
+ if(adv)out.unshift(["What it means",adv]);if(!alt.length&&status&&status!=="Good Service")out.push(["What to do","Check TfL Journey Planner or National Rail before you set off."]);return out}
+function favPanel(it,close){var kids=[],L=LIGHT[it.light];
+ kids.push(el("div",{class:"flight-big "+it.light},[el("i"),el("div",null,[el("b",null,[L[0]]),el("span",null,[it.tile?(it.tile.status||"No status"):it.light==="green"?"No diversion or delay listed by TfL":it.light==="grey"?"No reading yet":"Disruption listed by TfL"])])]));
+ if(it.tile){var D=it.tile.details||[];if(!D.length)kids.push(el("p",{class:"ok-line"},[it.light==="grey"?"Not running at this hour (normal overnight closure).":"✓ Good service: no disruption reported at the latest reading."]));
+  D.forEach(function(d){var txt=d.text||(d.incident?[d.incident.summary,d.incident.routes].concat((d.incident.body||[]).map(function(b){return b[Object.keys(b)[0]]})).join(". "):"");
+   var imp=impactOf(txt,(d.statuses||[])[0]);kids.push(el("div",{class:"fimp"},[el("div",{class:"dsub"},[(d.statuses||[]).join(" · ")+(d.until?" · until "+fmtWhen(d.until):"")]),el("dl",null,imp.reduce(function(a,x){return a.concat([el("dt",null,[x[0]]),el("dd",null,[x[1]])])},[]))]))});
+  if(D.length){var full=el("button",{type:"button",class:"fchip"},["Full notice and last 24 hours ↓"]);full.addEventListener("click",function(){var p=linePanel(it.tile,function(){p.remove()});full.replaceWith(p)});kids.push(full)}
+  var A=RS&&(RG.k==="now"?RS.ctx:RS.cur),Lr=A&&A.lines[it.f.id];if(Lr&&Lr.open){var f=gf(Lr);kids.push(el("p",{class:"small"},["Over "+(RG.k==="now"?"the last 24 h":RS.w.label)+": "+pc(f,0)+" good service, "+nf(Lr.inc)+" incident"+(Lr.inc===1?"":"s")+(Lr.inc?" (typically "+hrs1((Lr.open-Lr.cats[0]-Lr.note)/Lr.inc)+" to recover)":"")+"."]))}}
+ else if(it.bus){var x=it.bus.r,h=it.bus.h;if(!x||!x.k[h])kids.push(el("p",{class:"ok-line"},["✓ No diversion, special service or delay listed for route "+it.f.id+" at the latest reading."]));
+  else Object.keys(x.r).filter(function(m){return x.r[m].indexOf(h)>=0}).forEach(function(m){var imp=impactOf(m,"Special Service");kids.push(el("div",{class:"fimp"},[el("div",{class:"dsub"},[{u:"Unplanned",p:"Planned",i:"Notice"}[x.rk[m]]||"Notice"]),el("p",null,[m]),el("dl",null,imp.filter(function(i){return i[0]!=="What it means"}).reduce(function(a,y){return a.concat([el("dt",null,[y[0]]),el("dd",null,[y[1]])])},[]))]))})}
+ return panel(it.name,(MODE_SHORT[it.mode]||(it.mode==="bus"?"Bus":"Line"))+" · latest reading",it.light==="red"?"bad":it.light==="amber"?"warn":"good",kids,close)}
+function drawFavs(){var host=document.getElementById("fav-host");if(!host)return;var bl=IDX&&IDX.busDays&&IDX.busDays[IDX.busDays.length-1];var go=function(){host.innerHTML="";
+ var items=favItems(),N=((window.__S||{}).now||{}).lines||[],grid=el("div",{class:"fgrid"});
+ var head=el("div",{class:"fhead"},[el("div",null,[el("h3",null,["My lines"]),el("p",{class:"small"},["Up to "+FAV_MAX+" favourites, saved in this browser. Red = issue known · Yellow = possible issue · Green = good to go. Tap one for what it means for your journey."])])]);
+ var pick=el("div",{class:"fpick"}),inp=el("input",{type:"search",placeholder:items.length>=FAV_MAX?"Remove one to add another (max "+FAV_MAX+")":"Add a line, operator or bus route…","aria-label":"Add a favourite line",role:"combobox","aria-expanded":"false","aria-controls":"fav-list",autocomplete:"off"}),lst=el("div",{id:"fav-list",class:"srch-list",role:"listbox"}),hits=[],cur=-1;
+ if(items.length>=FAV_MAX)inp.disabled=true;
+ function opts(q){var have=favGet().map(function(f){return f.t+":"+f.id}),o=N.map(function(t){return{t:"line",id:t.id,n:t.name,s:MODE_SHORT[t.mode]||t.mode}}).filter(function(x){return have.indexOf("line:"+x.id)<0&&x.n.toLowerCase().indexOf(q)>=0});
+  var bq=q.replace(/^bus\s*/,"").toUpperCase();if(/^[A-Z]{0,2}\d{1,3}[A-Z]?$/.test(bq)&&have.indexOf("bus:"+bq)<0)o.push({t:"bus",id:bq,n:"Bus "+bq,s:"Bus route"});return o.slice(0,10)}
+ function show(){var q=inp.value.trim().toLowerCase();lst.innerHTML="";cur=-1;if(!q){lst.style.display="none";inp.setAttribute("aria-expanded","false");return}hits=opts(q);
+  hits.forEach(function(h,i){var b=el("button",{type:"button",class:"srch-o",role:"option",id:"fo-"+i},[el("b",null,[h.n]),el("span",null,[h.s])]);b.addEventListener("mousedown",function(e){e.preventDefault();add(h)});lst.appendChild(b)});
+  if(!hits.length)lst.appendChild(el("div",{class:"srch-o none"},["No match"]));lst.style.display="block";inp.setAttribute("aria-expanded","true")}
+ function add(h){var a=favGet();if(a.length>=FAV_MAX)return;a.push({t:h.t,id:h.id});favSave(a);FSEL=null;drawFavs();var i2=document.querySelector("#fav-host .fpick input");if(i2)i2.focus()}
+ inp.addEventListener("input",show);inp.addEventListener("blur",function(){setTimeout(function(){lst.style.display="none"},150)});
+ inp.addEventListener("keydown",function(e){var os=lst.querySelectorAll("[role=option]");if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();cur=Math.max(0,Math.min(os.length-1,cur+(e.key==="ArrowDown"?1:-1)));os.forEach(function(o,i){o.classList.toggle("on",i===cur)});if(os[cur])inp.setAttribute("aria-activedescendant",os[cur].id)}else if(e.key==="Enter"){e.preventDefault();if(hits[cur<0?0:cur])add(hits[cur<0?0:cur])}else if(e.key==="Escape"){inp.value="";show()}});
+ pick.appendChild(inp);pick.appendChild(lst);head.appendChild(pick);host.appendChild(head);
+ if(!items.length){host.appendChild(el("p",{class:"small fempty"},["No favourites yet. Type a line (e.g. Jubilee, Elizabeth, Southern) or a bus route number above."]));return}
+ items.forEach(function(it,i){var L=LIGHT[it.light],key=it.f.t+":"+it.f.id,card=el("div",{class:"fcard "+it.light+(FSEL===key?" open":"")},[glyph(it.mode,it.color),el("button",{type:"button",class:"fname","aria-expanded":String(FSEL===key)},[el("b",null,[it.name]),el("span",null,[it.tile?(it.tile.status||"No status"):L[0]])]),el("span",{class:"flight",title:L[0]},[el("i"),el("span",null,[L[0]])])]);
+  var rm=el("button",{type:"button",class:"frm","aria-label":"Remove "+it.name+" from favourites",title:"Remove"},["×"]);rm.addEventListener("click",function(e){e.stopPropagation();var a=favGet();a.splice(i,1);favSave(a);if(FSEL===key)FSEL=null;drawFavs()});card.appendChild(rm);
+  card.addEventListener("click",function(){FSEL=FSEL===key?null:key;drawFavs()});grid.appendChild(card);
+  if(FSEL===key)grid.appendChild(favPanel(it,function(){FSEL=null;drawFavs()}))});
+ host.appendChild(grid)};
+ if(bl&&!BUSD[bl])loadBus(ms(bl+"T00:00:00Z"),ms(bl+"T23:00:00Z")).then(go);else go()}
 
 function render(S){
  window.__S=S;
