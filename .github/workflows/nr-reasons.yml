@@ -1,0 +1,60 @@
+name: nr-reasons
+
+# Weekly refresh of Darwin's delay/cancellation reason texts (config/nrReasonCodes.json) from the Rail Data
+# Marketplace "Reference Data" product. Append-only: commits only when the content changes, never removes a
+# code. The key is read keylessly from Secret Manager (masked in logs). Zero LLM tokens.
+# The hourly collect run (or site.yml) republishes the dashboard with the new texts.
+on:
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: nr-reasons
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Sign in to Google Cloud (keyless)
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SA_EMAIL }}
+      - name: Read the Reference Data key from Secret Manager
+        id: keys
+        uses: google-github-actions/get-secretmanager-secrets@v3
+        with:
+          secrets: |-
+            ref:london-commuter-broker/rail-reference-data-key
+      - name: Fetch the reason texts
+        env:
+          NR_REF_KEY: ${{ steps.keys.outputs.ref }}
+        run: python3 tools/fetch_nr_reasons.py --out config/nrReasonCodes.json
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- config/nrReasonCodes.json && [ -z "$(git ls-files --others --exclude-standard config/nrReasonCodes.json)" ]; then
+            echo "no change"; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add config/nrReasonCodes.json
+          git commit -m "config: refresh National Rail reason texts"
+          for i in 1 2 3 4 5; do
+            git pull --rebase -q && git push -q origin HEAD:${{ github.ref_name }} && exit 0
+            git rebase --abort 2>/dev/null || true
+            sleep $((i * 10))
+          done
+          echo "push failed" >&2; exit 1
