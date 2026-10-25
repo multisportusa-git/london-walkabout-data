@@ -861,7 +861,7 @@ def build_upcoming(data_dir, now_iso):
         b = datetime.datetime.combine(dd + datetime.timedelta(days=1), datetime.time(0), tzinfo=tz)
         bounds[d] = (a.timestamp(), b.timestamp())
     out = {"v": 1, "built": now.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "from": days[0], "to": days[-1],
-           "days": days, "lines": {}, "nr": {}, "stops": {}, "stopLines": {}}
+           "days": days, "tflSlot": None, "lines": {}, "nr": {}, "stops": {}, "stopLines": {}}
 
     def overlaps(a, b):
         """{day: (start_s, end_s)} of the part of [a, b) inside each strip day."""
@@ -873,6 +873,7 @@ def build_upcoming(data_dir, now_iso):
         return res
 
     pl = latest_record(data_dir, "plannedLineStatus")
+    out["tflSlot"] = (pl or {}).get("slot")
     for ln in (pl or {}).get("lines") or []:
         if ln.get("mode") == "national-rail":
             continue          # operators come from the Knowledgebase incidents below
@@ -955,7 +956,7 @@ def publish_upcoming(data_dir, out_dir):
         up = build_upcoming(data_dir, datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
     except Exception as e:  # pragma: no cover
         print(f"::warning::upcoming not built: {type(e).__name__}: {e}")
-        up = {"v": 1, "built": None, "from": None, "to": None, "days": [], "lines": {}, "nr": {}, "stops": {}, "stopLines": {}}
+        up = {"v": 1, "built": None, "from": None, "to": None, "days": [], "tflSlot": None, "lines": {}, "nr": {}, "stops": {}, "stopLines": {}}
     os.makedirs(os.path.join(out_dir, "rollups"), exist_ok=True)
     with open(os.path.join(out_dir, "rollups", "upcoming.json"), "w", encoding="utf-8") as fh:
         json.dump(up, fh, separators=(",", ":"), ensure_ascii=False)

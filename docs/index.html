@@ -1001,9 +1001,9 @@ function calRow(title,sub,days,dm,open,go,unit){var on=days.filter(function(d){r
   return el("span",{class:"calc "+c,title:x?dayLbl(d)+": "+h+" h of planned works"+(x.n?" ("+x.n+" notice"+(x.n>1?"s":"")+")":""):dayLbl(d)+": none planned"},[x?(unit==="n"?String(x.n):Math.round(h)+"h"):"–"])})));
  r.addEventListener("click",go);return r}
 function fwdMsgs(rs,fallback){return rs.map(function(m){return el("div",{class:"fmsg"},[el("div",{class:"dsub"},[m.s||fallback]),el("p",null,[m.t]),el("ul",{class:"rlist"},m.w.map(function(w){return el("li",null,[ukWin(w)])}))])})}
-function fwdIntro(){return el("p",{class:"small"},[UP&&UP.built?"Planned works as recorded "+fmtSlot(UP.built)+". TfL's plan is read once a day (03:00 UTC), National Rail's every hour. Cells show hours affected (or number of works); times are UK time.":"Planned works for the coming week appear here once the first daily capture has run (03:00 UTC)."])}
+function fwdIntro(){return el("p",{class:"small"},[UP&&UP.built?"National Rail works as of "+fmtSlot(UP.built)+(UP.tflSlot?"; TfL's plan as read "+fmtSlot(UP.tflSlot)+" (once a day, from 03:00 UTC)":"")+". Cells show hours affected (or number of works); times are UK time.":"Planned works for the coming week appear here once the first daily capture has run (03:00 UTC)."])}
 function linesFwd(host){host.innerHTML="";var days=(UP&&UP.days)||[],ids=Object.keys((UP&&UP.lines)||{}),MO=["tube","elizabeth-line","dlr","overground","tram","river-bus","cable-car"];host.appendChild(fwdIntro());
- if(!days.length||!ids.length){host.appendChild(el("div",{class:"card small"},[UP&&UP.built?"No planned works are recorded for TfL lines in the next 7 days.":"Nothing captured yet."]));return}
+ if(!days.length||!ids.length){host.appendChild(el("div",{class:"card small"},[UP&&UP.tflSlot?"No planned works are recorded for TfL lines in the next 7 days (read "+fmtSlot(UP.tflSlot)+").":"TfL's planned works are read once a day from 03:00 UTC; the first reading arrives with the next hourly run."]));return}
  ids.sort(function(a,b){var A=UP.lines[a],B=UP.lines[b];return(MO.indexOf(A.m)-MO.indexOf(B.m))||A.n.localeCompare(B.n)});
  var cal=el("div",{class:"cal"},[calHead(days)]);
  ids.forEach(function(id){var L=UP.lines[id],open=USEL==="l:"+id,row=calRow(L.n,MODE_SHORT[L.m]||L.m,days,L.d,open,function(){USEL=open?null:"l:"+id;linesFwd(host)},"h");

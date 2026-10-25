@@ -188,6 +188,7 @@ class UpcomingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             U = self.build(d)
             self.assertEqual((U["v"], U["from"], U["days"][0], U["days"][-1], len(U["days"])), (1, "2026-10-25", "2026-10-25", "2026-10-31", 7))
+            self.assertEqual(U["tflSlot"], "2026-10-25T05:00:00Z")          # when TfL's planned works were last read
             self.assertNotIn("jubilee", U["lines"])                       # real-time delay: not planned works
             c = U["lines"]["central"]
             self.assertEqual((c["n"], c["m"]), ("Central", "tube"))
@@ -214,6 +215,7 @@ class UpcomingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             U = aggregate.build_upcoming(d, self.NOW)
             self.assertEqual((U["v"], U["lines"], U["nr"], U["stops"], U["stopLines"], len(U["days"])), (1, {}, {}, {}, {}, 7))
+            self.assertIsNone(U["tflSlot"])                                  # nothing captured yet: the page says so rather than "none planned"
 
 
 class UpcomingPublishTests(unittest.TestCase):
