@@ -1395,16 +1395,16 @@ function rtStops(lid){var L0=LRT&&LRT.lines[lid],seen={},out=[];if(!L0){Object.k
 function rtMap(host,infos){var mapEl=host.querySelector(".rtmap");if(!mapEl)return;
  loadLeaflet().then(function(){if(!mapEl.isConnected)return;if(RMAP){try{RMAP.remove()}catch(e){}RMAP=null}
   var dark=(document.documentElement.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"))==="dark";
-  var M=L.map(mapEl,{scrollWheelZoom:false});RMAP=M;baseMap(M,mapEl);
+  var M=L.map(mapEl,{scrollWheelZoom:false});RMAP=M;M.setView([51.51,-0.12],10);baseMap(M,mapEl);
   var css=getComputedStyle(document.documentElement),all=[],prev=null,layers=[],last=-1;
   infos.forEach(function(r,i){if(r.path)last=i});
   infos.forEach(function(r,i){if(!r.path&&!r.ll)return;var ll=r.ll||r.path.map(function(id){return[LRT.stops[id][1],LRT.stops[id][2]]}),col=css.getPropertyValue(RLC[r.light]).trim();
-   if(prev&&Math.abs(prev[0]-ll[0][0])+Math.abs(prev[1]-ll[0][1])>0.0005)L.polyline([prev,ll[0]],{color:css.getPropertyValue("--c5").trim(),weight:3,dashArray:"4 8",interactive:false}).addTo(M);
+   if(prev&&!r.brk&&Math.abs(prev[0]-ll[0][0])+Math.abs(prev[1]-ll[0][1])>0.0005)L.polyline([prev,ll[0]],{color:css.getPropertyValue("--c5").trim(),weight:3,dashArray:"4 8",interactive:false}).addTo(M);
    var pl=L.polyline(ll,{color:col,weight:8,opacity:.95,lineCap:"round",lineJoin:"round",dashArray:r.dash?"14 10":null}).addTo(M);
    pl.bindPopup(function(){return legReport(r)},{maxWidth:320});pl.bindTooltip(r.name+": "+r.a+" to "+r.b+" — "+(RLT[r.light]));
    ll.forEach(function(c){all.push(c);if(!r.dash)L.circleMarker(c,{radius:3,color:"#fff",weight:1,fillColor:"#333",fillOpacity:1,interactive:false}).addTo(M)});
    layers[i]=pl;prev=ll[ll.length-1];
-   if(i===0||(i>0&&!infos[i-1].path&&!infos[i-1].ll))L.circleMarker(ll[0],{radius:7,color:"#fff",weight:2,fillColor:"#333",fillOpacity:1,interactive:false}).bindTooltip(r.a,{permanent:true,direction:"top"}).addTo(M);
+   if(i===0||r.brk||(i>0&&!infos[i-1].path&&!infos[i-1].ll))L.circleMarker(ll[0],{radius:7,color:"#fff",weight:2,fillColor:"#333",fillOpacity:1,interactive:false}).bindTooltip(r.a,{permanent:true,direction:"top"}).addTo(M);
    L.circleMarker(ll[ll.length-1],{radius:7,color:"#fff",weight:2,fillColor:"#333",fillOpacity:1,interactive:false}).bindTooltip(r.b,{permanent:true,direction:"top"}).addTo(M)});
   if(all.length)M.fitBounds(L.latLngBounds(all),{padding:[36,36],maxZoom:15});setTimeout(function(){M.invalidateSize()},60);
   host._layers=layers}).catch(function(){})}
@@ -1430,25 +1430,29 @@ function rtBuild(host){var E=REDIT,wrap=el("div",{class:"rtbuild"}),msg=el("p",{
   var all=rtGet(),rec={n:(E.n||"").trim()||"Route "+(all.length+1),legs:E.legs.map(function(lg){return{l:lg.l,a:lg.a.trim(),b:lg.b.trim()}})};
   if(E.i>=0)all[E.i]=rec;else{if(all.length>=RT_MAX){msg.textContent="You can save up to "+RT_MAX+" routes. Remove one first.";return}all.push(rec);E.i=all.length-1}
   rtSave(all);RSEL=E.i;REDIT=null;drawRoutes()});
- [add,save,cancel].forEach(function(x){bar.appendChild(x)});wrap.appendChild(bar);wrap.appendChild(msg);host.appendChild(wrap)}
+ [add,save,cancel].forEach(function(x){bar.appendChild(x)});wrap.appendChild(bar);wrap.appendChild(msg);
+ var pv=el("div",{class:"rtpv"},[el("div",{class:"dsub"},["Preview: all your legs on one map"]),el("div",{class:"lwmap rtmap",role:"region","aria-label":"Preview of the route you are building, all legs on one map"}),el("p",{class:"small"},["Each leg appears as soon as both its stations are recognised."])]);pv.style.display="none";wrap.appendChild(pv);
+ var pt=null;function preview(){clearTimeout(pt);pt=setTimeout(function(){if(!pv.isConnected)return;var inf=E.legs.map(legInfo).filter(function(r){return r.path||r.ll});if(!inf.length){pv.style.display="none";return}pv.style.display="";rtMap(pv,inf)},450)}
+ wrap.addEventListener("input",preview);wrap.addEventListener("change",preview);preview();host.appendChild(wrap)}
 function drawRoutes(){var host=document.getElementById("rt-host");if(!host)return;
- Promise.all([loadLRT(),loadNRS()]).then(function(){host.innerHTML="";var routes=rtGet();if(RSEL>=routes.length)RSEL=0;
+ Promise.all([loadLRT(),loadNRS()]).then(function(){host.innerHTML="";var routes=rtGet();if(RSEL>=routes.length||RSEL<-1)RSEL=0;
   var chips=el("div",{class:"rtchips",role:"group","aria-label":"Saved routes"});
   routes.forEach(function(rt,i){var inf=rt.legs.map(legInfo),c=el("button",{type:"button",class:"fchip"+(i===RSEL&&!REDIT?" on":""),"aria-pressed":String(i===RSEL&&!REDIT)},[el("span",{class:"rtdot "+rtOverall(inf),"aria-hidden":"true"}),rt.n]);
    c.addEventListener("click",function(){RSEL=i;REDIT=null;drawRoutes()});chips.appendChild(c)});
+  if(routes.length>1){var ac=el("button",{type:"button",class:"fchip"+(RSEL===-1&&!REDIT?" on":""),"aria-pressed":String(RSEL===-1&&!REDIT)},["All routes on one map"]);ac.addEventListener("click",function(){RSEL=-1;REDIT=null;drawRoutes()});chips.appendChild(ac)}
   if(routes.length<RT_MAX){var nw=el("button",{type:"button",class:"fchip"},["+ New route"]);nw.addEventListener("click",function(){var ln=Object.keys(LRT.lines).sort();REDIT={i:-1,n:"",legs:[{l:LRT.lines.elizabeth?"elizabeth":ln[0],a:"",b:""}]};drawRoutes()});chips.appendChild(nw)}
   host.appendChild(chips);
   if(REDIT){host.appendChild(el("div",{class:"rthead"},[el("h3",null,[REDIT.i>=0?"Edit route":"New route"])]));host.appendChild(el("p",{class:"small"},["Add one leg per line or train operator you ride: pick it (TfL lines, river and cable car, or a National Rail operator), then type the station you board and the one you leave. Start typing to see the line's stations. Add another leg for each change."]));rtBuild(host);return}
   if(!routes.length){host.appendChild(el("p",{class:"small"},["No saved routes yet. Choose “+ New route” to build one leg by leg. Routes are saved in this browser."]));return}
-  var rt=routes[RSEL],infos=rt.legs.map(legInfo),ov=rtOverall(infos);
+  var all=RSEL===-1&&routes.length>1;if(RSEL===-1&&!all)RSEL=0;var rt=all?{n:"All saved routes",legs:[]}:routes[RSEL],infos=[];if(all)routes.forEach(function(x){x.legs.forEach(function(lg,j){var r=legInfo(lg);r.brk=j===0;r.rn=x.n;infos.push(r)})});else infos=rt.legs.map(legInfo);var ov=rtOverall(infos);
   var ed=el("button",{type:"button",class:"tb"},["Edit"]),rm=el("button",{type:"button",class:"tb"},["Remove route"]);
   ed.addEventListener("click",function(){REDIT={i:RSEL,n:rt.n,legs:rt.legs.map(function(x){return{l:x.l,a:x.a,b:x.b}})};drawRoutes()});
   rm.addEventListener("click",function(){var a=rtGet();a.splice(RSEL,1);rtSave(a);RSEL=0;drawRoutes()});
-  host.appendChild(el("div",{class:"rthead"},[el("div",null,[el("h3",null,[rt.n]),el("div",{class:"rtbadge "+ov},[ov==="grey"?"No readings yet":RLT[ov]+(ov==="green"?" on any leg":" on at least one leg")])]),el("div",{class:"fchips"},[ed,rm])]));
+  host.appendChild(el("div",{class:"rthead"},[el("div",null,[el("h3",null,[rt.n]),el("div",{class:"rtbadge "+ov},[ov==="grey"?"No readings yet":RLT[ov]+(ov==="green"?" on any leg":" on at least one leg")])]),el("div",{class:"fchips"},all?[]:[ed,rm])]));
   host.appendChild(el("div",{class:"rtkey","aria-hidden":"true"},[el("span",null,[el("i",{class:"rtdot green"}),"Green: no issue reported"]),el("span",null,[el("i",{class:"rtdot amber"}),"Amber: possible issue"]),el("span",null,[el("i",{class:"rtdot red"}),"Red: issue known"]),el("span",null,[el("i",{class:"rtdot"}),"Grey: no reading"])]));
   host.appendChild(el("div",{class:"lwmap rtmap",role:"region","aria-label":"Map of the route "+rt.n+", each leg coloured by its status. Click a leg for its report."}));
   var ol=el("ol",{class:"rtlegs"});
-  infos.forEach(function(r,i){var li=el("li"),b=el("button",{type:"button",class:"rtleg","aria-expanded":"false"},[el("span",{class:"rtdot "+r.light,"aria-hidden":"true"}),(i+1)+". "+r.name+": "+(r.a||r.lg.a)+" to "+(r.b||r.lg.b),el("span",{class:"sub"},[r.err?"Can't check":RLT[r.light]+(r.status?" · "+r.status:"")])]),pn=el("div",{class:"rtpanel",hidden:"hidden"});
+  infos.forEach(function(r,i){var li=el("li"),b=el("button",{type:"button",class:"rtleg","aria-expanded":"false"},[el("span",{class:"rtdot "+r.light,"aria-hidden":"true"}),(r.rn?r.rn+" — ":"")+(i+1)+". "+r.name+": "+(r.a||r.lg.a)+" to "+(r.b||r.lg.b),el("span",{class:"sub"},[r.err?"Can't check":RLT[r.light]+(r.status?" · "+r.status:"")])]),pn=el("div",{class:"rtpanel",hidden:"hidden"});
    b.addEventListener("click",function(){var open=b.getAttribute("aria-expanded")!=="true";b.setAttribute("aria-expanded",String(open));if(open){pn.innerHTML="";pn.appendChild(legReport(r));pn.hidden=false;var pl=host._layers&&host._layers[i];if(pl&&RMAP){RMAP.fitBounds(pl.getBounds(),{padding:[50,50],maxZoom:15});pl.openPopup()}}else pn.hidden=true});
    li.appendChild(b);li.appendChild(pn);ol.appendChild(li)});
   host.appendChild(ol);rtMap(host,infos)})}
