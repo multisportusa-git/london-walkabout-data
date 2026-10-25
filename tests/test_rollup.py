@@ -38,8 +38,13 @@ def sample(d):
     put(d, "busLineStatus", DAY, [{"slot": f"{DAY}T09:00:00Z", "totalLines": 675, "goodServiceCount": 470, "disrupted": [
         {"id": "100", "name": "100", "statuses": [{"severity": 0, "description": "Special Service", "reason": "Road closed  due to water works. Buses diverted.",
                                                    "disruption": {"category": "PlannedWork"}}]}]}], gz=True)
-    put(d, "liftDisruptions", DAY, [{"slot": f"{DAY}T09:00:00Z", "count": 2, "disruptions": [{"stationUniqueId": "A"}, {"stationUniqueId": "A"}]}])
-    put(d, "stopDisruptions", DAY, [{"slot": f"{DAY}T09:00:00Z", "disruptions": [{"atcoCode": "X"}, {"atcoCode": "Y"}, {"atcoCode": "Y"}]}])
+    put(d, "liftDisruptions", DAY, [{"slot": f"{DAY}T09:00:00Z", "count": 2, "disruptions": [{"stationUniqueId": "A", "disruptedLiftUniqueIds": ["A-Lift-1", "A-Lift-2"], "message": "Bank: No Step Free Access - faulty lift"}]}])
+    put(d, "stopDisruptions", DAY, [{"slot": f"{DAY}T09:00:00Z", "disruptions": [{"atcoCode": "X", "commonName": "Xstation", "description": "Lift closed", "type": "Information"},
+        {"atcoCode": "Y", "commonName": "Ystation", "description": "Exit closed"}, {"atcoCode": "Y", "commonName": "Ystation", "description": "Exit closed"}]}])
+    put(d, "arrivalsReadings", DAY, [{"slot": f"{DAY}T09:00:00Z", "stations": {"bank": {"totalPredictions": 49}}}])
+    put(d, "arrivalsNetwork", DAY, [{"slot": f"{DAY}T09:00:00Z", "fields": ["naptanId", "lineId", "platform", "direction", "destination", "x", "timeToStation"],
+        "modes": {"tube": [["S1", "bakerloo", "p", "o", "d", None, "60"], ["S2", "bakerloo", "p", "o", "d", None, "90"], ["S3", "central", "p", "o", "d", None, "30"]], "dlr": []}}], gz=True)
+    put(d, "crowdingNetwork", DAY, [{"slot": f"{DAY}T09:00:00Z", "stations": {"940GZZLUBNK": {"dataAvailable": True, "percentageOfBaseline": 0.5}, "940GZZLUOVL": {"dataAvailable": False}}}], gz=True)
     put(d, "crowdingReadings", DAY, [{"slot": f"{DAY}T09:00:00Z", "stations": {"bank": {"dataAvailable": True, "percentageOfBaseline": 0.254},
                                                                               "oval": {"dataAvailable": False, "percentageOfBaseline": 0}}}])
     put(d, "nationalRailDepartures", DAY, [{"slot": f"{DAY}T09:00:00Z", "fields": ["std", "etd", "isCancelled", "operatorCode", "loadingPct"], "stations": {"VIC": {"services": [
@@ -71,6 +76,11 @@ class RollupTests(unittest.TestCase):
             m = R["m"]
             self.assertEqual((m["busGood"][9], m["busTotal"][9], m["busGood"][8]), (470, 675, None))
             self.assertEqual((m["lifts"][9], m["liftStations"][9]), (2, 1))
+            self.assertEqual((R["lf"]["A"]["n"], R["lf"]["A"]["o"][9], R["lf"]["A"]["r"]), ("Bank", 2, {"Bank: No Step Free Access - faulty lift": [9]}))
+            self.assertEqual((R["sd"]["Y"]["n"], R["sd"]["Y"]["c"][9], R["sd"]["Y"]["r"]), ("Ystation", 2, {"Exit closed": [9]}))
+            self.assertEqual((R["ar"]["bank"][9], R["am"]["tube"][9], R["am"]["dlr"][9], R["al"]["bakerloo"][9], R["al"]["central"][9]), (49, 3, 0, 2, 1))
+            CN = json.loads((Path(d) / "_rollup" / "cn" / f"{DAY}.json").read_text())
+            self.assertEqual((CN["s"]["940GZZLUBNK"][9], "940GZZLUOVL" in CN["s"]), (50.0, False))
             self.assertEqual((m["notices"][9], m["noticeStations"][9]), (3, 2))
             self.assertEqual((m["nrDeps"][9], m["nrCanc"][9], m["nrLate"][9]), (3, 1, 1))
             self.assertEqual((m["nrInc"][9], m["nrUnpl"][9]), (10, 3))
@@ -84,7 +94,7 @@ class RollupTests(unittest.TestCase):
             self.assertEqual((run["h"], run["t"], run["d"], run["q"], run["r"], run["x"], run["k"], run["nr"], run["bad"]),
                              (9, f"{DAY}T09:00:18Z", 249.4, 120, 2, 0, True, {"200": 32, "500": 2}, ["crowdingNetwork"]))
             self.assertGreater(R["bytes"]["lineStatus"], 0)
-            self.assertNotIn("arrivalsNetwork", R["bytes"])          # no file that day -> no entry
+            self.assertNotIn("networkDisruptions", R["bytes"])       # no file that day -> no entry
             self.assertEqual((R["nrs"]["VIC"]["d"][9], R["nrs"]["VIC"]["c"][9], R["nrs"]["VIC"]["l"][9]), (3, 1, 1))
             B = json.loads((Path(d) / "_rollup" / "bus" / f"{DAY}.json").read_text())
             self.assertEqual((B["t"][9], B["g"][9]), (675, 470))

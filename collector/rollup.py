@@ -17,10 +17,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aggregate import line_statuses, line_worst, line_mode, tidy_reason  # noqa: E402
 from collect import DATASETS as ALL_DATASETS, DAILY_AT_UTC  # noqa: E402
 
-VERSION = 5  # bump to rebuild every day file when the format changes
+VERSION = 6  # bump to rebuild every day file when the format changes
 GO_LIVE = "2026-10-24T21:00:00Z"   # new collector took over (old Claude task before this)
 INCIDENT = ["2026-09-22T15:00:00Z", "2026-09-25T15:00:00Z"]
-READ = ["lineStatus", "busLineStatus", "liftDisruptions", "stopDisruptions", "crowdingReadings",
+READ = ["lineStatus", "busLineStatus", "arrivalsNetwork", "crowdingNetwork", "liftDisruptions", "stopDisruptions", "crowdingReadings",
         "nationalRailDepartures", "nationalRailIncidents", "arrivalsReadings"]
 DAY_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})\.ndjson(\.gz)?$")
 
@@ -240,14 +240,31 @@ def roll_day(data, day, look=None):
             m["busTotal"][H(s)] = tot
             m["busGood"][H(s)] = good if isinstance(good, int) else tot - len(r.get("disrupted") or [])
         seen.setdefault("busLineStatus", set()).add(H(s))
+    lf, sd, ar, am, al = {}, {}, {}, {}, {}
     for s, r in read_day(data, "liftDisruptions", day).items():
         D = [x for x in r.get("disruptions") or [] if isinstance(x, dict)]
+        for x in D:
+            sid = x.get("stationUniqueId")
+            if not sid: continue
+            msg = clip(re.sub(r"\s+", " ", x.get("message") or "Lift out of service").strip())
+            e = lf.setdefault(sid, {"n": (msg.split(":")[0].strip() if ":" in msg[:60] else sid), "o": blank(), "r": {}})
+            e["o"][H(s)] = (e["o"][H(s)] or 0) + max(1, len(x.get("disruptedLiftUniqueIds") or []))
+            hrs = e["r"].setdefault(msg, [])
+            if not hrs or hrs[-1] != H(s): hrs.append(H(s))
         m["lifts"][H(s)] = r["count"] if isinstance(r.get("count"), int) else len(D)
         m["liftStations"][H(s)] = len({x.get("stationUniqueId") for x in D if x.get("stationUniqueId")})
         seen.setdefault("liftDisruptions", set()).add(H(s))
     for s, r in read_day(data, "stopDisruptions", day).items():
         D = [x for x in r.get("disruptions") or [] if isinstance(x, dict)]
         m["notices"][H(s)] = len(D)
+        for x in D:
+            k = x.get("stationAtcoCode") or x.get("atcoCode") or x.get("commonName")
+            if not k: continue
+            e = sd.setdefault(k, {"n": x.get("commonName") or k, "c": blank(), "r": {}})
+            e["c"][H(s)] = (e["c"][H(s)] or 0) + 1
+            msg = clip(re.sub(r"\s+", " ", x.get("description") or "Notice").strip())
+            hrs = e["r"].setdefault(msg, [])
+            if not hrs or hrs[-1] != H(s): hrs.append(H(s))
         m["noticeStations"][H(s)] = len({x.get("atcoCode") or x.get("stationAtcoCode") or x.get("commonName") for x in D})
         seen.setdefault("stopDisruptions", set()).add(H(s))
     for s, r in read_day(data, "crowdingReadings", day).items():
@@ -269,8 +286,22 @@ def roll_day(data, day, look=None):
             m["nrInc"][H(s)] = r["count"]
             m["nrUnpl"][H(s)] = r["count"] - (r.get("planned") or 0)
         seen.setdefault("nationalRailIncidents", set()).add(H(s))
-    for s in read_day(data, "arrivalsReadings", day):
+    for s, r in read_day(data, "arrivalsReadings", day).items():
+        for sid, v in (r.get("stations") or {}).items():
+            if isinstance(v, dict) and isinstance(v.get("totalPredictions"), int):
+                ar.setdefault(sid, blank())[H(s)] = v["totalPredictions"]
         seen.setdefault("arrivalsReadings", set()).add(H(s))
+    for s, r in read_day(data, "arrivalsNetwork", day).items():
+        F = r.get("fields") or []
+        li = F.index("lineId") if "lineId" in F else 1
+        for mode, rows in (r.get("modes") or {}).items():
+            rows = rows if isinstance(rows, list) else []
+            am.setdefault(mode, blank())[H(s)] = len(rows)
+            cnt = {}
+            for row in rows:
+                if isinstance(row, list) and len(row) > li and row[li]: cnt[row[li]] = cnt.get(row[li], 0) + 1
+            for ln, n in cnt.items():
+                al.setdefault(ln, blank())[H(s)] = n
     runs = []
     for s, st, r in health_day(data, day):
         for ds, v in st.items():
@@ -291,7 +322,7 @@ def roll_day(data, day, look=None):
         n = sum(os.path.getsize(p) for p in day_files(data, ds, day))
         if n: size[ds] = n
     return {"day": day, "v": VERSION, "src": src_sizes(data, day), "lines": lines, "m": m, "crowd": crowd, "cov": cov,
-            "runs": runs, "bytes": size, "nrs": nrs, "nro": nro}
+            "runs": runs, "bytes": size, "nrs": nrs, "nro": nro, "lf": lf, "sd": sd, "ar": ar, "am": am, "al": al}
 
 
 def update(data):
@@ -318,6 +349,17 @@ def update(data):
         except (OSError, ValueError):
             pass
         R = roll_day(data, day, look)
+        if day_files(data, "crowdingNetwork", day):
+            cdir = os.path.join(data, "_rollup", "cn"); os.makedirs(cdir, exist_ok=True)
+            cs = {}
+            for sl, r in read_day(data, "crowdingNetwork", day).items():
+                for sid, v in (r.get("stations") or {}).items():
+                    p_ = v.get("percentageOfBaseline") if isinstance(v, dict) else None
+                    if isinstance(v, dict) and v.get("dataAvailable") and isinstance(p_, (int, float)):
+                        cs.setdefault(sid, [None] * 24)[H(sl)] = round(100 * p_, 1)
+            with open(os.path.join(cdir, day + ".json.tmp"), "w", encoding="utf-8") as fh:
+                json.dump({"day": day, "v": VERSION, "s": cs}, fh, separators=(",", ":"))
+            os.replace(os.path.join(cdir, day + ".json.tmp"), os.path.join(cdir, day + ".json"))
         bdir = os.path.join(data, "_rollup", "bus"); os.makedirs(bdir, exist_ok=True)
         if day_files(data, "busLineStatus", day):
             with open(os.path.join(bdir, day + ".json.tmp"), "w", encoding="utf-8") as fh:
@@ -353,8 +395,10 @@ def index(data):
     live = go_live_health(d, days, cov_first)
     bd = os.path.join(data, "_rollup", "bus")
     bus_days = sorted(f[:10] for f in os.listdir(bd) if f.endswith(".json")) if os.path.isdir(bd) else []
+    cd = os.path.join(data, "_rollup", "cn")
+    cn_days = sorted(f[:10] for f in os.listdir(cd) if f.endswith(".json")) if os.path.isdir(cd) else []
     return {"v": VERSION, "days": days, "first": days[0] if days else None, "last": days[-1] if days else None, "live": live,
-            "firstSlot": first_slot, "covFirst": cov_first, "busDays": bus_days, "bytes": total, "goLive": GO_LIVE, "incident": INCIDENT}
+            "firstSlot": first_slot, "covFirst": cov_first, "busDays": bus_days, "cnDays": cn_days, "bytes": total, "goLive": GO_LIVE, "incident": INCIDENT}
 
 
 def go_live_health(d, days, cov_first):
