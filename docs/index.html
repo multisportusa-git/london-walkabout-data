@@ -302,7 +302,7 @@ section.sx.closed .sb{display:none}section.sx.closed .sh .lede{display:none}
 .fpick{position:relative}.fpick input{width:100%;font:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--rule);border-radius:12px;background:var(--bg);color:var(--ink)}.fpick input:disabled{opacity:.6}
 .rtchips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}.rtchips .fchip{display:inline-flex;align-items:center;gap:6px}.rtdot{width:10px;height:10px;border-radius:50%;background:var(--c5);flex:none;display:inline-block}.rtdot.green{background:var(--c0)}.rtdot.amber{background:var(--c1)}.rtdot.red{background:var(--c4)}
 .rthead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin:6px 0}.rthead h3{margin:0;font-size:16px;font-weight:800}
-.rtmap{height:420px;margin-top:8px}.rtkey{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--sub);margin:8px 0}.rtkey span{display:inline-flex;align-items:center;gap:6px}
+.lw-recenter a{font-size:20px;line-height:30px;width:30px;height:30px;text-align:center;text-decoration:none;color:#222;background:#fff;display:block}.rtmap{height:420px;margin-top:8px}.rtkey{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--sub);margin:8px 0}.rtkey span{display:inline-flex;align-items:center;gap:6px}
 .rtlegs{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}.rtleg{width:100%;text-align:left;font:inherit;font-size:13px;font-weight:700;padding:9px 12px;border-radius:12px;border:1px solid var(--rule);background:var(--card);color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:10px}.rtleg .sub{font-weight:500;color:var(--sub);margin-left:auto;text-align:right}
 .rtrep{padding:8px 4px}.rtrep p{margin:4px 0}.rtpanel{padding:4px 12px 10px;border-left:4px solid var(--rule);margin:4px 0 4px 6px}.rtbadge{display:inline-block;font-size:12px;font-weight:800;padding:2px 9px;border-radius:99px;border:1px solid var(--rule);margin:4px 0}.rtbadge.green{border-color:var(--c0);color:var(--ok)}.rtbadge.amber{border-color:var(--c1)}.rtbadge.red{border-color:var(--c4)}.rtitem{margin-top:6px}.rtitem.off{opacity:.7}
 .rtbuild{display:grid;gap:10px;margin-top:8px}.rtrow{display:grid;grid-template-columns:minmax(130px,1fr) 2fr 2fr auto;gap:8px;align-items:center}.rtbuild select,.rtbuild input{font:inherit;font-size:14px;padding:8px 10px;border-radius:10px;border:1px solid var(--rule);background:var(--card);color:var(--ink);min-width:0;width:100%}.rtmsg{color:var(--c4);font-weight:700;margin:0}
@@ -1237,6 +1237,8 @@ function baseMap(M,mapEl){var dark=(document.documentElement.getAttribute("data-
  transit=L.tileLayer("https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png",{maxZoom:19,subdomains:"abc",attribution:'Rail network &copy; <a href="https://www.openrailwaymap.org/">OpenRailwayMap</a>'}),
  saved="Roadmap",tr=false;try{var sv=JSON.parse(localStorage.getItem("lw-basemap")||"{}");if(bases[sv.b])saved=sv.b;tr=!!sv.t}catch(e){}
  bases[saved].addTo(M);if(tr)transit.addTo(M);mapEl.classList.toggle("dark-tiles",dark&&saved==="Roadmap");
+ var RC=L.Control.extend({options:{position:"topleft"},onAdd:function(){var d=L.DomUtil.create("div","leaflet-bar lw-recenter"),a=L.DomUtil.create("a","",d);a.href="#";a.setAttribute("role","button");a.setAttribute("aria-label","Recenter map");a.title="Recenter map";a.innerHTML="&#8982;";
+  L.DomEvent.disableClickPropagation(d);L.DomEvent.on(a,"click",function(e){L.DomEvent.preventDefault(e);if(M._home)M._home();else M.setView([51.51,-0.12],11)});return d}});new RC().addTo(M);
  L.control.layers(bases,{"Transit (rail network)":transit},{collapsed:true,position:"topright"}).addTo(M);
  var cur=saved;M.on("baselayerchange",function(e){cur=e.name;mapEl.classList.toggle("dark-tiles",dark&&cur==="Roadmap");save()});M.on("overlayadd overlayremove",function(){save()});
  function save(){try{localStorage.setItem("lw-basemap",JSON.stringify({b:cur,t:M.hasLayer(transit)}))}catch(e){}}}
@@ -1343,7 +1345,7 @@ function legMap(it,texts){var box=el("div",{class:"fmapw",style:"display:none"})
   legs.forEach(function(l){L.polyline(l.ll,{color:alert,weight:9,opacity:.95,lineCap:"round",dashArray:l.exact?null:"6 10"}).addTo(M);l.ll.forEach(function(c){all.push(c)});
    [[l.ll[0],l.a],[l.ll[l.ll.length-1],l.b]].forEach(function(e){L.circleMarker(e[0],{radius:7,color:"#fff",weight:2,fillColor:alert,fillOpacity:1}).bindTooltip(e[1],{permanent:true,direction:"top"}).addTo(M)})});
   pts.forEach(function(q){all.push(q.ll);L.circleMarker(q.ll,{radius:9,color:"#fff",weight:2,fillColor:alert,fillOpacity:1}).bindTooltip(q.n,{permanent:true,direction:"top"}).addTo(M)});
-  M.fitBounds(L.latLngBounds(all),{padding:[34,34],maxZoom:14});setTimeout(function(){M.invalidateSize()},60);
+  M._home=function(){M.stop();if(M._c0)M.setView(M._c0,M._z0);else M.fitBounds(L.latLngBounds(all),{padding:[34,34],maxZoom:14})};M._home();setTimeout(function(){M.invalidateSize();M._c0=M.getCenter();M._z0=M.getZoom()},250);setTimeout(function(){M.invalidateSize()},60);
   cap.textContent="Highlighted in "+(red?"red":"amber")+": "+legs.map(function(l){return l.a+" to "+l.b}).concat(pts.map(function(q){return"at "+q.n})).join("; ")+(legs.some(function(l){return!l.exact})?" (straight line between the two stations: approximate).":".")}).catch(function(){});
  return box}
 var RT_MAX=8,RSEL=0,REDIT=null,RMAP=null;
@@ -1406,7 +1408,7 @@ function rtMap(host,infos){var mapEl=host.querySelector(".rtmap");if(!mapEl)retu
    layers[i]=pl;prev=ll[ll.length-1];
    if(i===0||r.brk||(i>0&&!infos[i-1].path&&!infos[i-1].ll))L.circleMarker(ll[0],{radius:7,color:"#fff",weight:2,fillColor:"#333",fillOpacity:1,interactive:false}).bindTooltip(r.a,{permanent:true,direction:"top"}).addTo(M);
    L.circleMarker(ll[ll.length-1],{radius:7,color:"#fff",weight:2,fillColor:"#333",fillOpacity:1,interactive:false}).bindTooltip(r.b,{permanent:true,direction:"top"}).addTo(M)});
-  if(all.length)M.fitBounds(L.latLngBounds(all),{padding:[36,36],maxZoom:15});setTimeout(function(){M.invalidateSize()},60);
+  if(all.length){M._home=function(){M.stop();if(M._c0)M.setView(M._c0,M._z0);else M.fitBounds(L.latLngBounds(all),{padding:[36,36],maxZoom:15})};M._home();setTimeout(function(){M.invalidateSize();M._c0=M.getCenter();M._z0=M.getZoom()},250)}setTimeout(function(){M.invalidateSize()},60);
   host._layers=layers}).catch(function(){})}
 function rtBuild(host){var E=REDIT,wrap=el("div",{class:"rtbuild"}),msg=el("p",{class:"rtmsg",role:"alert"});
  var ln=Object.keys(LRT.lines).sort(function(x,y){var a=LRT.lines[x],b=LRT.lines[y];return String(a.m).localeCompare(String(b.m))||String(a.n).localeCompare(String(b.n))});
