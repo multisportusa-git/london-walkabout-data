@@ -300,6 +300,15 @@ section.sx.closed .sb{display:none}section.sx.closed .sh .lede{display:none}
 /* My lines */
 .fav{margin:6px 0 14px;padding:16px}.fhead{display:grid;gap:10px;grid-template-columns:1fr minmax(240px,460px);align-items:start}.fpickw{display:grid;gap:8px}.fpickw .fchips{gap:5px}.fpickw .fchip{padding:4px 10px}.fhead h3{margin:0;font-size:16px;font-weight:800}
 .fpick{position:relative}.fpick input{width:100%;font:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--rule);border-radius:12px;background:var(--bg);color:var(--ink)}.fpick input:disabled{opacity:.6}
+.rtchips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}.rtchips .fchip{display:inline-flex;align-items:center;gap:6px}.rtdot{width:10px;height:10px;border-radius:50%;background:var(--c5);flex:none;display:inline-block}.rtdot.green{background:var(--c0)}.rtdot.amber{background:var(--c1)}.rtdot.red{background:var(--c4)}
+.rthead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin:6px 0}.rthead h3{margin:0;font-size:16px;font-weight:800}
+.rtmap{height:420px;margin-top:8px}.rtkey{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--sub);margin:8px 0}.rtkey span{display:inline-flex;align-items:center;gap:6px}
+.rtlegs{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}.rtleg{width:100%;text-align:left;font:inherit;font-size:13px;font-weight:700;padding:9px 12px;border-radius:12px;border:1px solid var(--rule);background:var(--card);color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:10px}.rtleg .sub{font-weight:500;color:var(--sub);margin-left:auto;text-align:right}
+.rtrep{padding:8px 4px}.rtrep p{margin:4px 0}.rtpanel{padding:4px 12px 10px;border-left:4px solid var(--rule);margin:4px 0 4px 6px}.rtbadge{display:inline-block;font-size:12px;font-weight:800;padding:2px 9px;border-radius:99px;border:1px solid var(--rule);margin:4px 0}.rtbadge.green{border-color:var(--c0);color:var(--ok)}.rtbadge.amber{border-color:var(--c1)}.rtbadge.red{border-color:var(--c4)}.rtitem{margin-top:6px}.rtitem.off{opacity:.7}
+.rtbuild{display:grid;gap:10px;margin-top:8px}.rtrow{display:grid;grid-template-columns:minmax(130px,1fr) 2fr 2fr auto;gap:8px;align-items:center}.rtbuild select,.rtbuild input{font:inherit;font-size:14px;padding:8px 10px;border-radius:10px;border:1px solid var(--rule);background:var(--card);color:var(--ink);min-width:0;width:100%}.rtmsg{color:var(--c4);font-weight:700;margin:0}
+@media (max-width:640px){.rtrow{grid-template-columns:1fr 1fr}.rtrow select{grid-column:1/-1}.rtmap{height:340px}}
+.wxnow{display:flex;flex-wrap:wrap;gap:18px;align-items:center}.wxbig{font-size:44px;line-height:1}.wxt{font-size:34px;font-weight:800;line-height:1}.wxd{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px 16px;font-size:13px;color:var(--sub);flex:1;min-width:240px}.wxd b{color:var(--ink);display:block;font-size:15px}
+.wxrain{margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid var(--rule);font-weight:700}.wxrain.wet{border-color:var(--bar)}.wxch{margin-top:12px}.wxch svg{width:100%;height:auto;display:block}.wxax{fill:var(--sub);font-size:10px;font-family:inherit}.wxgrid{stroke:var(--rule);stroke-width:1}.wxbar{fill:var(--bar)}.wxsrc{margin-top:10px}.wxsrc a{color:inherit;text-decoration:underline}
 .lwmap.fmap{height:260px;margin-top:6px}.fmapw{margin-top:10px}.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:12px;grid-auto-flow:row dense}.fgrid .lp{grid-column:1/-1;margin:0}
 .fcard{position:relative;display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;gap:4px 12px;align-items:center;padding:12px 34px 12px 12px;border-radius:16px;border:1px solid var(--rule);background:var(--bg);border-left:6px solid var(--lc,var(--c5));cursor:pointer;transition:transform .14s,box-shadow .14s}
 .fcard:hover{transform:translateY(-2px);box-shadow:0 8px 22px #00000026}.fcard.open{box-shadow:0 0 0 2px var(--accent)}
@@ -318,7 +327,7 @@ section.sx.closed .sb{display:none}section.sx.closed .sh .lede{display:none}
 <body>
 <div class="wrap">
 <header><div><p class="eyebrow">London Walkabout</p><h1>Data Desk</h1><p class="stamp" id="stamp">Loading&hellip;</p></div><button id="theme" type="button" aria-label="Toggle colour theme">Theme</button></header>
-<div class="stick"><nav aria-label="Sections"><a href="#glance">Glance</a><a href="#now">Now</a><a href="#map">Map</a><a href="#observations">Observations</a><a href="#lines">Lines</a><a href="#nationalrail">National Rail</a><a href="#buses">Buses</a><a href="#lifts">Lifts</a><a href="#stations">Stations</a><a href="#crowding">Crowding</a><a href="#arrivals">Arrivals</a><a href="#health">Data health</a></nav><div id="tbar" class="tbar" role="toolbar" aria-label="Time range"></div><div id="srch" class="srch"></div></div>
+<div class="stick"><nav aria-label="Sections"><a href="#glance">Glance</a><a href="#routes">My routes</a><a href="#weather">Weather</a><a href="#now">Now</a><a href="#map">Map</a><a href="#observations">Observations</a><a href="#lines">Lines</a><a href="#nationalrail">National Rail</a><a href="#buses">Buses</a><a href="#lifts">Lifts</a><a href="#stations">Stations</a><a href="#crowding">Crowding</a><a href="#arrivals">Arrivals</a><a href="#health">Data health</a></nav><div id="tbar" class="tbar" role="toolbar" aria-label="Time range"></div><div id="srch" class="srch"></div></div>
 <main id="app"><div class="card" style="margin-top:18px">Loading data&hellip;</div></main>
 <footer>Source: TfL Unified API, collected hourly by a scheduled job and stored as plain files in this repository. This page makes no external requests; it only reads <code>summary.json</code> (or <code>summary.js</code> when opened from disk).</footer>
 </div>
@@ -598,7 +607,7 @@ function explorer(S){
 /* ---------- Time ranges: one control for the whole report (rollups summed in the browser, zero tokens) ---------- */
 var RANGES=[{k:"now",l:"Now",h:1},{k:"24h",l:"24 h",h:24},{k:"48h",l:"48 h",h:48},{k:"7d",l:"7 d",h:168},{k:"14d",l:"14 d",h:336},{k:"30d",l:"30 d",h:720},{k:"90d",l:"90 d",h:2160},{k:"6m",l:"6 mo",h:4392},{k:"1y",l:"1 yr",h:8760},{k:"next7",l:"Next 7 d"},{k:"custom",l:"Custom"}];
 var RG={k:"now",from:null,to:null},IDX=null,DAYS={},RS=null,LSEL=null,OSEL=null;
-var NOW_ONLY=["glance"];
+var NOW_ONLY=["glance","routes","weather"];
 var DS14={lineStatus:"Line status",liftDisruptions:"Lift outages",stopDisruptions:"Station notices",crowdingReadings:"Crowding (tracked)",arrivalsReadings:"Arrivals (tracked)",arrivalsDetail:"Arrivals detail",busLineStatus:"Bus routes",networkDisruptions:"Network disruptions",crowdingNetwork:"Crowding (network)",nationalRailDepartures:"NR departure boards",nationalRailIncidents:"NR incidents",nationalRailStations:"NR stations (daily)",stationAccess:"Station access (daily)",arrivalsNetwork:"Arrivals (network)"};
 var DAILY_DS={nationalRailStations:1,stationAccess:1};
 (function(){try{var q=new URLSearchParams(location.search),k=q.get("range");if(k&&RANGES.some(function(r){return r.k===k&&!r.soon}))RG.k=k;RG.from=q.get("from");RG.to=q.get("to")}catch(e){}})();
@@ -950,7 +959,7 @@ function watchdog(b,c){fetch("https://api.github.com/repos/multisportusa-git/lon
   b.querySelector(".go").textContent="Open on GitHub ↗"}).catch(function(){b.querySelector(".v").textContent="–";var p=b.querySelector("p")||b.insertBefore(el("p"),b.querySelector(".go"));p.textContent="Couldn't reach GitHub just now.";b.querySelector(".go").textContent="Open on GitHub ↗"})}
 
 /* ---------- section headers: distinct, collapsible, remembered per viewer ---------- */
-var SEC_META={glance:["At a glance","var(--accent)"],now:["Now","var(--c0)"],map:["Map","var(--accent)"],observations:["Observations","var(--c3)"],health:["Data health","var(--c1)"],lines:["Lines","var(--c4)"],nationalrail:["National Rail","var(--accent2)"],buses:["Buses","var(--c4)"],lifts:["Lifts","var(--c2)"],stations:["Stations","var(--accent2)"],crowding:["Crowding","var(--c3)"],arrivals:["Arrivals","var(--c0)"]};
+var SEC_META={glance:["At a glance","var(--accent)"],routes:["My routes","var(--accent2)"],weather:["Weather","var(--c0)"],now:["Now","var(--c0)"],map:["Map","var(--accent)"],observations:["Observations","var(--c3)"],health:["Data health","var(--c1)"],lines:["Lines","var(--c4)"],nationalrail:["National Rail","var(--accent2)"],buses:["Buses","var(--c4)"],lifts:["Lifts","var(--c2)"],stations:["Stations","var(--accent2)"],crowding:["Crowding","var(--c3)"],arrivals:["Arrivals","var(--c0)"]};
 function collapsedSet(){try{return JSON.parse(localStorage.getItem("lw-collapsed")||"[]")}catch(e){return[]}}
 function saveCollapsed(a){try{localStorage.setItem("lw-collapsed",JSON.stringify(a))}catch(e){}}
 function setSection(id,open){setTimeout(function(){try{drawBar();if(id==="map"&&open)drawMap()}catch(e){}},0);var sct=document.getElementById(id);if(!sct||!sct.classList.contains("sx"))return;sct.classList.toggle("closed",!open);var b=sct.querySelector(".sh-c");if(b)b.setAttribute("aria-expanded",String(open));
@@ -1323,6 +1332,125 @@ function legMap(it,texts){var box=el("div",{class:"fmapw",style:"display:none"})
   M.fitBounds(L.latLngBounds(all),{padding:[34,34],maxZoom:14});setTimeout(function(){M.invalidateSize()},60);
   cap.textContent="Highlighted in "+(red?"red":"amber")+": "+legs.map(function(l){return l.a+" to "+l.b}).concat(pts.map(function(q){return"at "+q.n})).join("; ")+(legs.some(function(l){return!l.exact})?" (straight line between the two stations: approximate).":".")}).catch(function(){});
  return box}
+var RT_MAX=8,RSEL=0,REDIT=null,RMAP=null;
+var RLC={green:"--c0",amber:"--c1",red:"--c4",grey:"--c5"},RLT={green:"No issue reported",amber:"Possible issue",red:"Issue known",grey:"No reading"};
+var RMODE={tube:"Tube",dlr:"DLR",overground:"Overground","elizabeth-line":"Elizabeth line",tram:"Tram"};
+function rtGet(){try{var a=JSON.parse(localStorage.getItem("lw-routes")||"[]");return Array.isArray(a)?a.slice(0,RT_MAX):[]}catch(e){return[]}}
+function rtSave(a){try{localStorage.setItem("lw-routes",JSON.stringify(a.slice(0,RT_MAX)))}catch(e){}}
+function legText(d){return d.text||(d.incident?[d.incident.summary,d.incident.routes].concat((d.incident.body||[]).map(function(b){return b[Object.keys(b)[0]]})).filter(Boolean).join(". "):"")}
+function legInfo(lg){var N=((window.__S||{}).now||{}).lines||[],g=routeGraph(lg.l),L0=LRT&&LRT.lines[lg.l];
+ var r={lg:lg,name:L0?L0.n:lg.l,light:"grey",items:[],path:null,status:null};
+ if(!g){r.err="No route data for this line yet.";return r}
+ var ka=matchKey(g.keys,normSt(lg.a)),kb=matchKey(g.keys,normSt(lg.b));
+ if(!ka||!kb){r.err="Could not find "+(!ka?lg.a:lg.b)+" on the "+r.name+" line.";return r}
+ var path=pathIds(g,g.names[ka],g.names[kb]);if(!path){r.err="No connected path between these two stops.";return r}
+ r.path=path;r.a=stName(LRT.stops[path[0]][0]);r.b=stName(LRT.stops[path[path.length-1]][0]);
+ var set={};path.forEach(function(id){set[id]=1});
+ var t=N.filter(function(x){return x.id===lg.l})[0];if(!t)return r;
+ r.status=t.status;if(t.cat===5){r.note="Not running at this hour (normal overnight closure).";return r}
+ r.light="green";var rank={green:0,amber:1,red:2},need=Math.min(2,path.length);
+ (t.details||[]).forEach(function(d){var txt=legText(d),dl=(d.kind==="info"||d.cat===0)?"green":(d.cat===3||d.cat===4?"red":"amber"),hit=true,where="whole line",st=[];
+  legPairs(txt).forEach(function(p){var a=matchKey(g.keys,normSt(p[0])),b=matchKey(g.keys,normSt(p[1]));if(a&&b){var pp=pathIds(g,g.names[a],g.names[b]);if(pp)st.push(pp)}});
+  if(st.length){where="stretch";hit=st.some(function(pp){var n=0;pp.forEach(function(id){if(set[id])n++});return n>=need})}
+  r.items.push({text:txt,light:dl,status:(d.statuses||[])[0]||"",until:d.until,hit:hit,where:where});
+  if(hit&&rank[dl]>rank[r.light])r.light=dl});
+ return r}
+function legReport(r){var kids=[el("b",null,[r.name+": "+(r.a||r.lg.a)+" to "+(r.b||r.lg.b)]),el("div",{class:"rtbadge "+r.light},[(r.err?"Can't check":RLT[r.light])+(r.status?" · "+r.status:"")])];
+ if(r.err)kids.push(el("p",{class:"small"},[r.err]));else if(r.note)kids.push(el("p",{class:"small"},[r.note]));
+ else if(!r.items.length)kids.push(el("p",{class:"ok-line"},["✓ Good service: nothing reported on this line at the latest reading."]));
+ r.items.forEach(function(x){kids.push(el("div",{class:"rtitem"+(x.hit?"":" off")},[el("div",{class:"dsub"},[(x.status||"Notice")+(x.until?" · until "+fmtWhen(x.until):"")+" · "+(x.hit?(x.where==="stretch"?"on your leg":"affects the whole line"):"elsewhere on the line, not your leg")]),el("p",null,[x.text||"No further detail given."])]))});
+ return el("div",{class:"rtrep"},kids)}
+function rtOverall(infos){var rank={grey:0,green:1,amber:2,red:3},w="grey";infos.forEach(function(r){if(rank[r.light]>rank[w])w=r.light});return w}
+function rtStops(lid){var L0=LRT&&LRT.lines[lid],seen={},out=[];if(!L0)return out;L0.b.forEach(function(b){b.forEach(function(id){var s=LRT.stops[id];if(!s)return;var n=stName(s[0]);if(!seen[n]){seen[n]=1;out.push(n)}})});return out.sort()}
+function rtMap(host,infos){var mapEl=host.querySelector(".rtmap");if(!mapEl)return;
+ loadLeaflet().then(function(){if(!mapEl.isConnected)return;if(RMAP){try{RMAP.remove()}catch(e){}RMAP=null}
+  var dark=(document.documentElement.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"))==="dark";
+  var M=L.map(mapEl,{scrollWheelZoom:false});RMAP=M;L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(M);mapEl.classList.toggle("dark-tiles",dark);
+  var css=getComputedStyle(document.documentElement),all=[],prev=null,layers=[],last=-1;
+  infos.forEach(function(r,i){if(r.path)last=i});
+  infos.forEach(function(r,i){if(!r.path)return;var ll=r.path.map(function(id){return[LRT.stops[id][1],LRT.stops[id][2]]}),col=css.getPropertyValue(RLC[r.light]).trim();
+   if(prev&&Math.abs(prev[0]-ll[0][0])+Math.abs(prev[1]-ll[0][1])>0.0005)L.polyline([prev,ll[0]],{color:css.getPropertyValue("--c5").trim(),weight:3,dashArray:"4 8",interactive:false}).addTo(M);
+   var pl=L.polyline(ll,{color:col,weight:8,opacity:.95,lineCap:"round",lineJoin:"round"}).addTo(M);
+   pl.bindPopup(function(){return legReport(r)},{maxWidth:320});pl.bindTooltip(r.name+": "+r.a+" to "+r.b+" — "+(RLT[r.light]));
+   ll.forEach(function(c){all.push(c);L.circleMarker(c,{radius:3,color:"#fff",weight:1,fillColor:"#333",fillOpacity:1,interactive:false}).addTo(M)});
+   layers[i]=pl;prev=ll[ll.length-1];
+   if(i===0||(i>0&&infos[i-1].path===null))L.circleMarker(ll[0],{radius:7,color:"#fff",weight:2,fillColor:"#333",fillOpacity:1,interactive:false}).bindTooltip(r.a,{permanent:true,direction:"top"}).addTo(M);
+   L.circleMarker(ll[ll.length-1],{radius:7,color:"#fff",weight:2,fillColor:"#333",fillOpacity:1,interactive:false}).bindTooltip(r.b,{permanent:true,direction:"top"}).addTo(M)});
+  if(all.length)M.fitBounds(L.latLngBounds(all),{padding:[36,36],maxZoom:15});setTimeout(function(){M.invalidateSize()},60);
+  host._layers=layers}).catch(function(){})}
+function rtBuild(host){var E=REDIT,wrap=el("div",{class:"rtbuild"}),msg=el("p",{class:"rtmsg",role:"alert"});
+ var ln=Object.keys(LRT.lines).sort(function(x,y){var a=LRT.lines[x],b=LRT.lines[y];return String(a.m).localeCompare(String(b.m))||String(a.n).localeCompare(String(b.n))});
+ wrap.appendChild(el("label",{class:"small"},["Route name"]));
+ var nm=el("input",{type:"text",value:E.n||"","aria-label":"Route name",placeholder:"e.g. Home to work",maxlength:"40"});nm.addEventListener("input",function(){E.n=nm.value});wrap.appendChild(nm);
+ E.legs.forEach(function(lg,i){var row=el("div",{class:"rtrow"}),sel=el("select",{"aria-label":"Leg "+(i+1)+" line"}),dl="rt-dl-"+i+"-"+lg.l,dlE=el("datalist",{id:dl}),mode=null,og=null;
+  ln.forEach(function(id){var L0=LRT.lines[id];if(L0.m!==mode){mode=L0.m;og=el("optgroup",{label:RMODE[mode]||mode});sel.appendChild(og)}var o=el("option",{value:id},[L0.n]);if(id===lg.l)o.selected=true;og.appendChild(o)});
+  rtStops(lg.l).forEach(function(n){dlE.appendChild(el("option",{value:n}))});
+  var fa=el("input",{type:"text",list:dl,value:lg.a||"","aria-label":"Leg "+(i+1)+" from station",placeholder:"From station",autocomplete:"off"}),fb=el("input",{type:"text",list:dl,value:lg.b||"","aria-label":"Leg "+(i+1)+" to station",placeholder:"To station",autocomplete:"off"});
+  fa.addEventListener("input",function(){lg.a=fa.value});fb.addEventListener("input",function(){lg.b=fb.value});
+  sel.addEventListener("change",function(){lg.l=sel.value;drawRoutes()});
+  var rm=el("button",{type:"button",class:"tb","aria-label":"Remove leg "+(i+1)},["Remove"]);rm.addEventListener("click",function(){E.legs.splice(i,1);if(!E.legs.length)E.legs.push({l:ln[0],a:"",b:""});drawRoutes()});
+  [sel,fa,fb,rm,dlE].forEach(function(x){row.appendChild(x)});wrap.appendChild(row)});
+ var bar=el("div",{class:"fchips"}),add=el("button",{type:"button",class:"fchip"},["+ Add a leg"]),save=el("button",{type:"button",class:"fchip on"},["Save route"]),cancel=el("button",{type:"button",class:"fchip"},["Cancel"]);
+ add.addEventListener("click",function(){if(E.legs.length>=8)return;var p=E.legs[E.legs.length-1];E.legs.push({l:p.l,a:p.b||"",b:""});drawRoutes()});
+ cancel.addEventListener("click",function(){REDIT=null;drawRoutes()});
+ save.addEventListener("click",function(){var bad=null;E.legs.forEach(function(lg,i){if(bad)return;var r=legInfo(lg);if(r.err)bad="Leg "+(i+1)+": "+r.err});
+  if(bad){msg.textContent=bad;return}
+  var all=rtGet(),rec={n:(E.n||"").trim()||"Route "+(all.length+1),legs:E.legs.map(function(lg){return{l:lg.l,a:lg.a.trim(),b:lg.b.trim()}})};
+  if(E.i>=0)all[E.i]=rec;else{if(all.length>=RT_MAX){msg.textContent="You can save up to "+RT_MAX+" routes. Remove one first.";return}all.push(rec);E.i=all.length-1}
+  rtSave(all);RSEL=E.i;REDIT=null;drawRoutes()});
+ [add,save,cancel].forEach(function(x){bar.appendChild(x)});wrap.appendChild(bar);wrap.appendChild(msg);host.appendChild(wrap)}
+function drawRoutes(){var host=document.getElementById("rt-host");if(!host)return;
+ loadLRT().then(function(){host.innerHTML="";var routes=rtGet();if(RSEL>=routes.length)RSEL=0;
+  var chips=el("div",{class:"rtchips",role:"group","aria-label":"Saved routes"});
+  routes.forEach(function(rt,i){var inf=rt.legs.map(legInfo),c=el("button",{type:"button",class:"fchip"+(i===RSEL&&!REDIT?" on":""),"aria-pressed":String(i===RSEL&&!REDIT)},[el("span",{class:"rtdot "+rtOverall(inf),"aria-hidden":"true"}),rt.n]);
+   c.addEventListener("click",function(){RSEL=i;REDIT=null;drawRoutes()});chips.appendChild(c)});
+  if(routes.length<RT_MAX){var nw=el("button",{type:"button",class:"fchip"},["+ New route"]);nw.addEventListener("click",function(){var ln=Object.keys(LRT.lines).sort();REDIT={i:-1,n:"",legs:[{l:LRT.lines.elizabeth?"elizabeth":ln[0],a:"",b:""}]};drawRoutes()});chips.appendChild(nw)}
+  host.appendChild(chips);
+  if(REDIT){host.appendChild(el("div",{class:"rthead"},[el("h3",null,[REDIT.i>=0?"Edit route":"New route"])]));host.appendChild(el("p",{class:"small"},["Add one leg per line you ride: pick the line, then type the station you board and the one you leave. Start typing to see the line's stations. Add another leg for each change."]));rtBuild(host);return}
+  if(!routes.length){host.appendChild(el("p",{class:"small"},["No saved routes yet. Choose “+ New route” to build one leg by leg. Routes are saved in this browser."]));return}
+  var rt=routes[RSEL],infos=rt.legs.map(legInfo),ov=rtOverall(infos);
+  var ed=el("button",{type:"button",class:"tb"},["Edit"]),rm=el("button",{type:"button",class:"tb"},["Remove route"]);
+  ed.addEventListener("click",function(){REDIT={i:RSEL,n:rt.n,legs:rt.legs.map(function(x){return{l:x.l,a:x.a,b:x.b}})};drawRoutes()});
+  rm.addEventListener("click",function(){var a=rtGet();a.splice(RSEL,1);rtSave(a);RSEL=0;drawRoutes()});
+  host.appendChild(el("div",{class:"rthead"},[el("div",null,[el("h3",null,[rt.n]),el("div",{class:"rtbadge "+ov},[ov==="grey"?"No readings yet":RLT[ov]+(ov==="green"?" on any leg":" on at least one leg")])]),el("div",{class:"fchips"},[ed,rm])]));
+  host.appendChild(el("div",{class:"rtkey","aria-hidden":"true"},[el("span",null,[el("i",{class:"rtdot green"}),"Green: no issue reported"]),el("span",null,[el("i",{class:"rtdot amber"}),"Amber: possible issue"]),el("span",null,[el("i",{class:"rtdot red"}),"Red: issue known"]),el("span",null,[el("i",{class:"rtdot"}),"Grey: no reading"])]));
+  host.appendChild(el("div",{class:"lwmap rtmap",role:"region","aria-label":"Map of the route "+rt.n+", each leg coloured by its status. Click a leg for its report."}));
+  var ol=el("ol",{class:"rtlegs"});
+  infos.forEach(function(r,i){var li=el("li"),b=el("button",{type:"button",class:"rtleg","aria-expanded":"false"},[el("span",{class:"rtdot "+r.light,"aria-hidden":"true"}),(i+1)+". "+r.name+": "+(r.a||r.lg.a)+" to "+(r.b||r.lg.b),el("span",{class:"sub"},[r.err?"Can't check":RLT[r.light]+(r.status?" · "+r.status:"")])]),pn=el("div",{class:"rtpanel",hidden:"hidden"});
+   b.addEventListener("click",function(){var open=b.getAttribute("aria-expanded")!=="true";b.setAttribute("aria-expanded",String(open));if(open){pn.innerHTML="";pn.appendChild(legReport(r));pn.hidden=false;var pl=host._layers&&host._layers[i];if(pl&&RMAP){RMAP.fitBounds(pl.getBounds(),{padding:[50,50],maxZoom:15});pl.openPopup()}}else pn.hidden=true});
+   li.appendChild(b);li.appendChild(pn);ol.appendChild(li)});
+  host.appendChild(ol);rtMap(host,infos)})}
+function routesSection(S){return el("section",{id:"routes"},[el("h2",null,["My routes"]),el("p",{class:"lede"},["Build a journey leg by leg, save it, and see it end to end on a map. Each leg is green when nothing is reported, amber for a possible issue and red for a known one. Click a leg on the map, or a leg in the list, for its report. Tube, DLR, Overground, Elizabeth line and Tram legs."]),el("div",{id:"rt-host",class:"card fav"})])}
+var WX=null,WXT=null;
+var WXC={0:["Clear","☀️"],1:["Mostly clear","🌤️"],2:["Partly cloudy","⛅"],3:["Overcast","☁️"],45:["Fog","🌫️"],48:["Freezing fog","🌫️"],51:["Light drizzle","🌦️"],53:["Drizzle","🌦️"],55:["Heavy drizzle","🌧️"],56:["Freezing drizzle","🌧️"],57:["Freezing drizzle","🌧️"],61:["Light rain","🌧️"],63:["Rain","🌧️"],65:["Heavy rain","🌧️"],66:["Freezing rain","🌧️"],67:["Freezing rain","🌧️"],71:["Light snow","🌨️"],73:["Snow","🌨️"],75:["Heavy snow","❄️"],77:["Snow grains","🌨️"],80:["Light showers","🌦️"],81:["Showers","🌧️"],82:["Heavy showers","⛈️"],85:["Snow showers","🌨️"],86:["Heavy snow showers","❄️"],95:["Thunderstorm","⛈️"],96:["Thunderstorm, hail","⛈️"],99:["Thunderstorm, hail","⛈️"]};
+function wxLoad(){return fetchJSON("https://api.open-meteo.com/v1/forecast?latitude=51.5074&longitude=-0.1278&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_gusts_10m,precipitation,relative_humidity_2m&minutely_15=precipitation&hourly=temperature_2m,precipitation_probability,precipitation,weather_code&forecast_days=2&timezone=Europe%2FLondon&wind_speed_unit=mph")}
+function wxChart(vals,labels,max,unit,aria,fmt){var W=600,H=150,l=34,r=8,t=8,b=22,n=vals.length,bw=(W-l-r)/n,g="";
+ [0,.5,1].forEach(function(f){var y=t+(H-t-b)*(1-f);g+='<line class="wxgrid" x1="'+l+'" x2="'+(W-r)+'" y1="'+y+'" y2="'+y+'"/><text class="wxax" x="'+(l-4)+'" y="'+(y+3)+'" text-anchor="end">'+fmt(max*f)+'</text>'});
+ vals.forEach(function(v,i){var h=(H-t-b)*Math.min(1,v/max),x=l+i*bw;g+='<rect class="wxbar" x="'+(x+1)+'" y="'+(H-b-h)+'" width="'+Math.max(1,bw-2)+'" height="'+h+'"><title>'+labels[i]+": "+fmt(v)+unit+'</title></rect>'});
+ labels.forEach(function(lb,i){if(lb.lab)g+='<text class="wxax" x="'+(l+i*bw+bw/2)+'" y="'+(H-6)+'" text-anchor="middle">'+lb.lab+'</text>'});
+ return'<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+aria.replace(/"/g,"")+'">'+g+'</svg>'}
+function drawWeather(){var host=document.getElementById("wx-host");if(!host)return;
+ var paint=function(d){host.innerHTML="";if(!d||!d.current){host.appendChild(el("p",{class:"small"},["Weather is unavailable right now. It will retry shortly."]));return}
+  var c=d.current,w=WXC[c.weather_code]||["",""],now=c.time,m=d.minutely_15,h=d.hourly;
+  host.appendChild(el("div",{class:"wxnow"},[el("div",{class:"wxbig","aria-hidden":"true"},[w[1]]),el("div",null,[el("div",{class:"wxt"},[Math.round(c.temperature_2m)+"°C"]),el("div",{class:"small"},[w[0]+" in London"])]),
+   el("div",{class:"wxd"},[el("div",null,["Feels like",el("b",null,[Math.round(c.apparent_temperature)+"°C"])]),el("div",null,["Wind",el("b",null,[Math.round(c.wind_speed_10m)+" mph"])]),el("div",null,["Gusts",el("b",null,[Math.round(c.wind_gusts_10m)+" mph"])]),el("div",null,["Humidity",el("b",null,[c.relative_humidity_2m+"%"])])])]));
+  var i0=0;for(var i=0;i<m.time.length;i++){if(m.time[i]<=now)i0=i}
+  var next=m.precipitation.slice(i0,i0+8),times=m.time.slice(i0,i0+8),wet=function(v){return v>=0.1},hhmm=function(t){return t.slice(11,16)},total=next.reduce(function(a,b){return a+(b||0)},0),msg,isWet=false;
+  if(wet(next[0])){isWet=true;var k=-1;for(var j=1;j<next.length;j++)if(!wet(next[j])){k=j;break}msg=k<0?"Raining now, and it looks set to continue for the next 2 hours ("+total.toFixed(1)+" mm).":"Raining now, easing around "+hhmm(times[k])+"."}
+  else{var f=-1;for(var q=1;q<next.length;q++)if(wet(next[q])){f=q;break}if(f>=0){isWet=true;msg="Dry now. Rain expected from about "+hhmm(times[f])+" ("+total.toFixed(1)+" mm in the next 2 hours)."}else msg="Dry for the next 2 hours."}
+  host.appendChild(el("div",{class:"wxrain"+(isWet?" wet":"")},["☔ "+msg]));
+  var lab2=times.map(function(t,i){return{lab:i%2===0?hhmm(t):"",t:hhmm(t)}});
+  var c1=el("div",{class:"wxch"},[el("div",{class:"dsub"},["Rain over the next 2 hours (mm per 15 min)"])]);
+  var mx=Math.max(1,Math.ceil(Math.max.apply(null,next.concat([0.5]))));var d1=el("div");d1.innerHTML=wxChart(next,lab2.map(function(x){return{lab:x.lab,toString:function(){return x.t}}}),mx,"mm","Rain per 15 minutes for the next 2 hours. "+msg,function(v){return(Math.round(v*10)/10)+""});c1.appendChild(d1);host.appendChild(c1);
+  var hi=0;for(var z=0;z<h.time.length;z++){if(h.time[z].slice(0,13)<=now.slice(0,13))hi=z}
+  var pr=h.precipitation_probability.slice(hi,hi+24),ht=h.time.slice(hi,hi+24),pk=0;pr.forEach(function(v,i){if(v>pr[pk])pk=i});
+  var c2=el("div",{class:"wxch"},[el("div",{class:"dsub"},["Chance of rain, next 24 hours"])]),d2=el("div");
+  d2.innerHTML=wxChart(pr.map(function(v){return v||0}),ht.map(function(t,i){return{lab:i%3===0?hhmm(t):"",toString:function(){return hhmm(t)+" · "+Math.round(h.temperature_2m[hi+i])+"°C, "+h.precipitation[hi+i]+" mm"}}}),100,"%","Chance of rain per hour for the next 24 hours. Highest "+pr[pk]+" percent around "+hhmm(ht[pk])+".",function(v){return Math.round(v)+""});
+  c2.appendChild(d2);c2.appendChild(el("p",{class:"small"},[pr[pk]>0?"Highest chance: "+pr[pk]+"% around "+hhmm(ht[pk])+".":"No rain expected in the next 24 hours."]));host.appendChild(c2);
+  host.appendChild(el("p",{class:"small wxsrc"},["Forecast for central London from ",el("a",{href:"https://open-meteo.com/",rel:"noopener"},["Open-Meteo"])," (CC BY 4.0), updated every 10 minutes while this page is open. Updated "+hhmm(now)+"."]))};
+ if(WX)paint(WX);wxLoad().then(function(d){if(d)WX=d;paint(WX)});
+ if(!WXT)WXT=setInterval(function(){if(document.getElementById("wx-host"))wxLoad().then(function(d){if(d){WX=d;paint(d)}})},600000)}
+function weatherSection(S){return el("section",{id:"weather"},[el("h2",null,["Weather"]),el("p",{class:"lede"},["London now, whether rain is coming in the next two hours, and the chance of rain hour by hour for the next day."]),el("div",{id:"wx-host",class:"card fav"})])}
 function favPanel(it,close){var kids=[],L=LIGHT[it.light];
  kids.push(el("div",{class:"flight-big "+it.light},[el("i"),el("div",null,[el("b",null,[L[0]]),el("span",null,[it.xt?it.xt:it.nrs?nrsText(it.nrs):it.tile?(it.tile.status||"No status"):it.light==="green"?"No diversion or delay listed by TfL":it.light==="grey"?"No reading yet":"Disruption listed by TfL"])])]));
  if(it.tile){var D=it.tile.details||[],texts=[];if(!D.length)kids.push(el("p",{class:"ok-line"},[it.light==="grey"?"Not running at this hour (normal overnight closure).":"✓ Good service: no disruption reported at the latest reading."]));
@@ -1384,6 +1512,8 @@ function render(S){
  var recs=0,r=M.records||{};Object.keys(r).forEach(function(k){recs+=r[k].records||0});
  var cov=S.coverage&&S.coverage.lineStatus;
  try{app.appendChild(glance(S))}catch(e){app.appendChild(el("div",{class:"err"},["Could not draw the glance row: "+e.message]))}
+ try{app.appendChild(routesSection(S));drawRoutes()}catch(e){app.appendChild(el("div",{class:"err"},["Could not draw My routes: "+e.message]))}
+ try{app.appendChild(weatherSection(S));drawWeather()}catch(e){app.appendChild(el("div",{class:"err"},["Could not draw Weather: "+e.message]))}
 
  [nowBoard,mapSection,obsSection,linesSection,nrSection,busSection,liftsSection,stationsSection,crowdingSection,arrivalsSection,healthSection].forEach(function(f){try{app.appendChild(f(S))}catch(e){app.appendChild(el("div",{class:"err"},["Could not draw a section: "+e.message]))}});
  try{enhanceSections();applyOrder();markEnds();openTarget();initSearch()}catch(e){}
