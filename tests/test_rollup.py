@@ -103,6 +103,7 @@ class RollupTests(unittest.TestCase):
             self.assertEqual(R["nrs"]["VIC"]["ld"][9], 30.0)
             self.assertEqual((R["nro"]["SN"]["d"][9], R["nro"]["SN"]["l"][9], R["nro"]["SE"]["c"][9]), (2, 1, 1))
             self.assertNotIn("CHX", R["nrs"])          # board unavailable that hour: no figures
+            self.assertEqual((R["nro"]["SN"]["ld"][9], R["nro"]["SE"]["ld"][9]), (30.0, None))   # per-operator loading (Gatwick/Heathrow Express card)
 
     def test_nr_reason_counts(self):
         """Darwin reason codes are counted per station and operator, sparsely as {code: {hour: n}}:

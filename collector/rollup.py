@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aggregate import line_statuses, line_worst, line_mode, tidy_reason  # noqa: E402
 from collect import DATASETS as ALL_DATASETS, DAILY_AT_UTC  # noqa: E402
 
-VERSION = 7  # bump to rebuild every day file when the format changes
+VERSION = 8  # bump to rebuild every day file when the format changes
 GO_LIVE = "2026-10-24T21:00:00Z"   # new collector took over (old Claude task before this)
 INCIDENT = ["2026-09-22T15:00:00Z", "2026-09-25T15:00:00Z"]
 READ = ["lineStatus", "busLineStatus", "arrivalsNetwork", "crowdingNetwork", "liftDisruptions", "stopDisruptions", "crowdingReadings",
@@ -159,6 +159,7 @@ def nr_detail(rec, h, nrs, nro, blank):
     if len(ix) < 4: return
     i_cr = F.index("cancelReason") if "cancelReason" in F else None
     i_dr = F.index("delayReason") if "delayReason" in F else None
+    opl = {}   # operator -> every loading % seen this hour, across all stations
     for crs, b in (rec.get("stations") or {}).items():
         svs = (b or {}).get("services")
         if svs is None:   # board unavailable this hour
@@ -168,7 +169,7 @@ def nr_detail(rec, h, nrs, nro, blank):
         ld = []
         for sv in svs:
             op = sv[ix["operatorCode"]] or "?"
-            O = nro.setdefault(op, {"d": blank(), "c": blank(), "l": blank(), "rc": {}, "rl": {}})
+            O = nro.setdefault(op, {"d": blank(), "c": blank(), "l": blank(), "ld": blank(), "rc": {}, "rl": {}})
             late = 0
             canc = 1 if sv[ix["isCancelled"]] else 0
             if not canc:
@@ -183,8 +184,11 @@ def nr_detail(rec, h, nrs, nro, blank):
                 if code is not None and code != "":
                     per_hour = X["rc" if canc else "rl"].setdefault(str(code), {})
                     per_hour[str(h)] = per_hour.get(str(h), 0) + 1
-            if "loadingPct" in ix and isinstance(sv[ix["loadingPct"]], (int, float)): ld.append(sv[ix["loadingPct"]])
+            if "loadingPct" in ix and isinstance(sv[ix["loadingPct"]], (int, float)):
+                ld.append(sv[ix["loadingPct"]]); opl.setdefault(op, []).append(sv[ix["loadingPct"]])
         if ld: S["ld"][h] = round(sum(ld) / len(ld), 1)
+    for op, v in opl.items():
+        nro[op]["ld"][h] = round(sum(v) / len(v), 1)
 
 
 def roll_bus_day(data, day):
